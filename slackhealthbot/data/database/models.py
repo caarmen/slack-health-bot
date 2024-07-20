@@ -73,3 +73,18 @@ class FitbitActivity(TimestampMixin, Base):
     fitbit_user_id: Mapped[int] = mapped_column(
         ForeignKey("fitbit_users.id", ondelete="CASCADE")
     )
+
+
+class FitbitDailyActivity(Base):
+    __tablename__ = "fitbit_daily_activities"
+    __table_args__ = {"info": {"is_view": True}}
+    fitbit_user_id: Mapped[int] = mapped_column(primary_key=True)
+    type_id: Mapped[int] = mapped_column(primary_key=True)
+    date: Mapped[datetime] = mapped_column(primary_key=True)
+    count_activities: Mapped[int] = mapped_column()
+    sum_calories: Mapped[int] = mapped_column()
+    sum_total_minutes: Mapped[int] = mapped_column()
+    sum_fat_burn_minutes: Mapped[Optional[int]] = mapped_column()
+    sum_cardio_minutes: Mapped[Optional[int]] = mapped_column()
+    sum_peak_minutes: Mapped[Optional[int]] = mapped_column()
+    sum_out_of_range_minutes: Mapped[Optional[int]] = mapped_column()
