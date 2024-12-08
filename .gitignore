@@ -3,3 +3,5 @@
 .coverage
 reports/
 __pycache__/
+config/app-merged.yaml
+config/app-custom.yaml

@@ -2,7 +2,9 @@ import dataclasses
 import datetime as dt
 from pathlib import Path
 
+import yaml
 from pydantic import AnyHttpUrl, BaseModel, HttpUrl
+from pydantic.v1.utils import deep_update
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -73,7 +75,27 @@ class AppSettings(BaseSettings):
     app: App
     withings: Withings
     fitbit: Fitbit
-    model_config = SettingsConfigDict(yaml_file="config/app.yaml")
+    model_config = SettingsConfigDict(yaml_file="config/app-merged.yaml")
+
+    @classmethod
+    def _load_yaml_file(
+        cls,
+        path: str,
+        required: bool,
+    ) -> dict:
+        try:
+            with open(path, "r", encoding="utf-8") as file:
+                return yaml.safe_load(file)
+        except OSError as e:
+            if required:
+                raise e
+            return {}
+
+    @classmethod
+    def _load_merged_config(cls) -> dict:
+        default_config = cls._load_yaml_file("config/app-default.yaml", required=True)
+        custom_config = cls._load_yaml_file("config/app-custom.yaml", required=False)
+        return deep_update(default_config, custom_config)
 
     @classmethod
     def settings_customise_sources(
@@ -82,6 +104,9 @@ class AppSettings(BaseSettings):
         *args,
         **kwargs,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
+        merged_config = cls._load_merged_config()
+        with open("config/app-merged.yaml", "w", encoding="utf-8") as file:
+            yaml.safe_dump(merged_config, file)
         yaml_settings_source = YamlConfigSettingsSource(settings_cls)
         return (yaml_settings_source,)
 

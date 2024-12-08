@@ -21,6 +21,7 @@ Pushes messages to a pre-selected Slack channel, when users log new weight data 
 * Create an application in the [Fitbit developer dashboard](https://dev.fitbit.com/apps/).
 * Create an application [on Slack](https://api.slack.com/apps), with a webhook to post messages to a specific channel.
 * Copy the `.env.template` file to `.env`, and modify the values.
+* [Optional]: Copy the `config/app-custom.yaml.template` file to `app-custom.yaml`, and override any values which are defined in `config/app-default.yaml`.
 
 ## Retrieve the docker image
 
@@ -36,7 +37,7 @@ Create a folder on the host where the database will be saved: `/path/to/data/`.
 Run the docker image.
 
 ```
-docker run --detach --publish 8000:8000 -v `pwd`/.env:/app/.env -v /path/to/data/:/tmp/data ghcr.io/caarmen/slack-health-bot
+docker run --detach --publish 8000:8000 -v `pwd`/.env:/app/.env -v `pwd`/app-custom.yaml:/app/config/app-custom.yaml  -v /path/to/data/:/tmp/data ghcr.io/caarmen/slack-health-bot
 ```
 
 ## Using the application
