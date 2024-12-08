@@ -17,7 +17,7 @@ class Scenario:
 SCENARIOS = [
     Scenario(
         name="valid verify code",
-        input_verify_value=settings.fitbit_client_subscriber_verification_code,
+        input_verify_value=settings.secret_settings.fitbit_client_subscriber_verification_code,
         expected_response_status_code=status.HTTP_204_NO_CONTENT,
     ),
     Scenario(

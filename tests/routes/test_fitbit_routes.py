@@ -1,6 +1,7 @@
 import datetime
 import json
 import re
+from operator import attrgetter
 
 import pytest
 from fastapi import status
@@ -60,13 +61,13 @@ async def test_sleep_notification(
 
     # Mock fitbit endpoint to return some sleep data
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1.2/user/-/sleep/date/2023-05-12.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-05-12.json",
     ).mock(Response(status_code=200, json=scenario.input_mock_fitbit_response))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # When we receive the callback from fitbit that a new sleep is available
     with client:
@@ -142,17 +143,23 @@ async def test_activity_notification(  # noqa PLR0913
 
     # Mock fitbit endpoint to return some activity data
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1/user/-/activities/list.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
     ).mock(Response(status_code=200, json=scenario.input_mock_fitbit_response))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     if scenario.settings_override:
         for key, value in scenario.settings_override.items():
-            monkeypatch.setattr(settings, key, value)
+            settings_attribute_tokens = key.split(".")
+            settings_attribute_to_patch = settings_attribute_tokens.pop()
+            settings_obj_path_to_patch = ".".join(settings_attribute_tokens)
+            settings_obj_to_patch = attrgetter(settings_obj_path_to_patch)(settings)
+            monkeypatch.setattr(
+                settings_obj_to_patch, settings_attribute_to_patch, value
+            )
 
     # When we receive the callback from fitbit that a new activity is available
     with client:
@@ -226,13 +233,13 @@ async def test_duplicate_activity_notification(
 
     # Mock fitbit endpoint to return some activity data
     activity_request = respx_mock.get(
-        url=f"{settings.fitbit_base_url}1/user/-/activities/list.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
     ).mock(Response(status_code=200, json=scenario.input_mock_fitbit_response))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # When we receive the callback from fitbit that a new activity is available
     with client:
@@ -317,13 +324,13 @@ async def test_duplicate_sleep_notification(
 
     # Mock fitbit endpoint to return some sleep data
     sleep_request = respx_mock.get(
-        url=f"{settings.fitbit_base_url}1.2/user/-/sleep/date/2023-05-12.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-05-12.json",
     ).mock(Response(status_code=200, json=scenario.input_mock_fitbit_response))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # When we receive the callback from fitbit that a new activity is available
     with client:

@@ -3,6 +3,7 @@ import datetime
 from typing import Any
 
 from slackhealthbot.domain.models.sleep import SleepData
+from slackhealthbot.settings import ActivityType
 
 
 @dataclasses.dataclass
@@ -611,8 +612,14 @@ activity_scenarios: dict[str, FitbitActivityScenario] = {
         expected_new_activity_created=True,
         expected_message_pattern=None,
         settings_override={
-            "fitbit_realtime_activity_type_ids": [],
-            "fitbit_daily_activity_type_ids": [55001],
+            "app_settings.fitbit.activities.activity_types": [
+                ActivityType(
+                    name="Spinning",
+                    id=55001,
+                    report_realtime=False,
+                    report_daily=True,
+                )
+            ],
         },
     ),
     "Invalid json response": FitbitActivityScenario(

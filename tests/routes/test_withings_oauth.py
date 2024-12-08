@@ -52,7 +52,7 @@ async def test_refresh_token_ok(
 
     # Mock withings oauth refresh token success
     oauth_token_refresh_request = respx_mock.post(
-        url=f"{settings.withings_base_url}v2/oauth2",
+        url=f"{settings.app_settings.withings.base_url}v2/oauth2",
     ).mock(
         Response(
             status_code=200,
@@ -70,7 +70,7 @@ async def test_refresh_token_ok(
 
     # Mock withings endpoint to return some weight data
     withings_weight_request = respx_mock.post(
-        url=f"{settings.withings_base_url}measure",
+        url=f"{settings.app_settings.withings.base_url}measure",
     ).mock(
         Response(
             status_code=200,
@@ -93,9 +93,9 @@ async def test_refresh_token_ok(
     )
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(url=f"{settings.slack_webhook_url}").mock(
-        return_value=Response(status_code=200)
-    )
+    slack_request = respx_mock.post(
+        url=f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(status_code=200))
 
     # When we receive the callback from withings that a new weight is available
     with client as client_ctx:
@@ -159,13 +159,13 @@ async def test_refresh_token_fail(
 
     # Mock withings oauth refresh token fail
     oauth_token_refresh_request = respx_mock.post(
-        url=f"{settings.withings_base_url}v2/oauth2",
+        url=f"{settings.app_settings.withings.base_url}v2/oauth2",
     ).mock(Response(status_code=200, json={"status": 401}))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(url=f"{settings.slack_webhook_url}").mock(
-        return_value=Response(status_code=200)
-    )
+    slack_request = respx_mock.post(
+        url=f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(status_code=200))
 
     # When we receive the callback from withings that a new weight is available
     with client as client_ctx:
@@ -325,13 +325,13 @@ async def test_logged_out(
 
     # Mock withings endpoint to return an unauthorized error
     withings_weight_request = respx_mock.post(
-        url=f"{settings.withings_base_url}measure",
+        url=f"{settings.app_settings.withings.base_url}measure",
     ).mock(return_value=Response(status_code=200, json={"status": 401}))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
     # When we receive the callback from withings that a new weight is available
     with client as client_ctx:
         response = client_ctx.post(

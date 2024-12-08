@@ -1,0 +1,53 @@
+# Configuration of the slack-health-bot application
+app:
+  server_url: "http://localhost:8000/" # The url to access the slack-health-bot server for login.
+  database_path: "/tmp/data/slackhealthbot.db" # The location to the database file.
+  logging:
+    sql_log_level: "WARNING"
+
+# Withings-specific configuration:
+# Note that secrets like the client id and client secret are configured in the .env file.
+withings:
+  callback_url: "http://localhost:8000/" # The url that withings will call at the end of SSO.
+
+# Fitbit-specific configuration:
+# Note that secrets like the client id and client secret are configured in the .env file.
+fitbit:
+  poll:
+    enabled: true # If your server can't receive webhook calls from fitbit, activate polling instead, to fetch data from fitbit.
+    interval_seconds: 3600 # How often to poll fitbit for data.
+
+  activities:
+    history_days: 180 # how far to look back to report new records of best times/durations/calories/etc.
+    daily_report_time: "23:50" # Time of day (HH:mm)to post daily reports to slack.
+
+    activity_types:
+      # Configuration specific to activity types.
+      #
+      # For fitbit activity type ids:
+      # See https://dev.fitbit.com/build/reference/web-api/activity/get-all-activity-types/
+      # for the list of all supported activity types and their ids.
+      # Some examples:
+      # 55001:  Spinning
+      # 90013:  Walk
+      # 90001:  Bike
+      # 90019:  Treadmill
+      # 1071:   Outdoor Bike
+      #
+      # supported attributes:
+      # report_daily: whether a daily summary report should be posted to slack for this activity type
+      # report_realtime: whether a report should be posted to slack for this activity type as soon as we receive it from fitbit
+      - name: Treadmill
+        id: 90019
+        report_daily: true
+        report_realtime: false
+
+      - name: Spinning
+        id: 55001
+        report_daily: false
+        report_realtime: true
+
+      - name: Walk
+        id: 90013
+        report_daily: false
+        report_realtime: true

@@ -65,7 +65,7 @@ async def test_refresh_token_ok(
 
     # Mock fitbit oauth refresh token success
     oauth_token_refresh_request = respx_mock.post(
-        url=f"{settings.fitbit_base_url}oauth2/token",
+        url=f"{settings.fitbit_oauth_settings.base_url}oauth2/token",
     ).mock(
         Response(
             status_code=200,
@@ -80,12 +80,12 @@ async def test_refresh_token_ok(
 
     # Mock fitbit endpoint to return no sleep data
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1.2/user/-/sleep/date/2023-01-23.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-01-23.json",
     ).mock(Response(status_code=200, json={"sleep": []}))
 
     # Mock fitbit endpoint to return some activity data
     fitbit_activity_request = respx_mock.get(
-        url=f"{settings.fitbit_base_url}1/user/-/activities/list.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
     ).mock(
         side_effect=[
             Response(status_code=200, json=scenario.input_mock_fitbit_response),
@@ -93,9 +93,9 @@ async def test_refresh_token_ok(
     )
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # When we poll for new activity data
     # Use the client as a context manager so that the app lifespan hook is called
@@ -175,13 +175,13 @@ async def test_refresh_token_fail(
 
     # Mock fitbit oauth refresh token failure
     oauth_token_refresh_request = respx_mock.post(
-        url=f"{settings.fitbit_base_url}oauth2/token",
+        url=f"{settings.fitbit_oauth_settings.base_url}oauth2/token",
     ).mock(Response(status_code=401))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # When we poll for new activity data
     # Use the client as a context manager so that the app lifespan hook is called
@@ -259,16 +259,16 @@ async def test_logged_out(
 
     # Mock fitbit endpoints to return an unauthorized error
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1.2/user/-/sleep/date/2023-01-23.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-01-23.json",
     ).mock(Response(status_code=401))
     fitbit_activity_request = respx_mock.get(
-        url=f"{settings.fitbit_base_url}1/user/-/activities/list.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
     ).mock(Response(status_code=401))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # When we poll for new activity data
     # Use the client as a context manager so that the app lifespan hook is called

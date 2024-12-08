@@ -83,7 +83,9 @@ async def do(
             fitbit_userid=fitbit_userid,
             type_id=new_activity_data.type_id,
             since=datetime.datetime.now(datetime.timezone.utc)
-            - datetime.timedelta(days=settings.fitbit_activity_record_history_days),
+            - datetime.timedelta(
+                days=settings.app_settings.fitbit.activities.history_days
+            ),
         )
     )
     await usecase_post_activity.do(
@@ -96,7 +98,7 @@ async def do(
             all_time_top_activity_data=all_time_top_activity_stats,
             recent_top_activity_data=recent_top_activity_stats,
         ),
-        record_history_days=settings.fitbit_activity_record_history_days,
+        record_history_days=settings.app_settings.fitbit.activities.history_days,
     )
 
     return new_activity_data
