@@ -130,9 +130,9 @@ async def test_process_daily_activities(
     )
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     with monkeypatch.context() as mp:
         freeze_time(

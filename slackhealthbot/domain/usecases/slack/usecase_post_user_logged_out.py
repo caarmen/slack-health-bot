@@ -12,6 +12,6 @@ async def do(
     message = f"""
 Oh no <@{slack_alias}>, looks like you were logged out of {service}! 😳.
 You'll need to log in again to get your reports:
-{settings.server_url}v1/{service}-authorization/{slack_alias}
+{settings.app_settings.app.server_url}v1/{service}-authorization/{slack_alias}
 """
     await repo.post_message(message)

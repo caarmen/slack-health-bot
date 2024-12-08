@@ -1,0 +1,4 @@
+# Place any overrides of the default values, from app-default.yaml, into this file.
+app:
+  logging:
+    sql_log_level: "DEBUG"  # example override: set sql logging to DEBUG

@@ -103,9 +103,9 @@ async def test_post_daily_activities(
     )
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # Freeze time to just before the scheduled post time.
     freeze_time(
@@ -117,7 +117,7 @@ async def test_post_daily_activities(
         local_fitbit_repo_factory=fitbit_repository_factory(mocked_async_session),
         activity_type_ids=set(settings.fitbit_daily_activity_type_ids),
         slack_repo=WebhookSlackRepository(),
-        post_time=settings.fitbit_daily_activity_post_time,
+        post_time=settings.app_settings.fitbit.activities.daily_report_time,
     )
 
     # Wait for one iteration of the scheduled task:

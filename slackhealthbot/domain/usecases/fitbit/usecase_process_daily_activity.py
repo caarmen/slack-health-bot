@@ -52,7 +52,8 @@ async def do(
         await local_fitbit_repo.get_top_daily_activity_stats_by_user_and_activity_type(
             fitbit_userid=fitbit_userid,
             type_id=daily_activity.type_id,
-            since=now - dt.timedelta(days=settings.fitbit_activity_record_history_days),
+            since=now
+            - dt.timedelta(days=settings.app_settings.fitbit.activities.history_days),
         )
     )
 
@@ -68,5 +69,5 @@ async def do(
         slack_alias=user_identity.slack_alias,
         activity_name=activity_names.get(daily_activity.type_id, "Unknown"),
         history=history,
-        record_history_days=settings.fitbit_activity_record_history_days,
+        record_history_days=settings.app_settings.fitbit.activities.history_days,
     )

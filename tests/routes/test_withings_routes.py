@@ -68,7 +68,7 @@ async def test_weight_notification(
 
     # Mock withings endpoint to return some weight data
     respx_mock.post(
-        url=f"{settings.withings_base_url}measure",
+        url=f"{settings.app_settings.withings.base_url}measure",
     ).mock(
         return_value=Response(
             status_code=200,
@@ -91,9 +91,9 @@ async def test_weight_notification(
     )
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(url=f"{settings.slack_webhook_url}").mock(
-        return_value=Response(status_code=200)
-    )
+    slack_request = respx_mock.post(
+        url=f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(status_code=200))
 
     # When we receive the callback from withings that a new weight is available
     # Use the client as a context manager so the app can have its lfespan events triggered.
@@ -152,7 +152,7 @@ async def test_duplicate_weight_notification(
 
     # Mock withings endpoint to return some weight data
     weight_request = respx_mock.post(
-        url=f"{settings.withings_base_url}measure",
+        url=f"{settings.app_settings.withings.base_url}measure",
     ).mock(
         return_value=Response(
             status_code=200,
@@ -175,9 +175,9 @@ async def test_duplicate_weight_notification(
     )
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(url=f"{settings.slack_webhook_url}").mock(
-        return_value=Response(status_code=200)
-    )
+    slack_request = respx_mock.post(
+        url=f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(status_code=200))
 
     # When we receive the callback from withings that a new weight is available
     # Use the client as a context manager so the app can have its lfespan events triggered.

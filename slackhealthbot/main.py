@@ -35,7 +35,7 @@ from slackhealthbot.tasks.post_daily_activities_task import post_daily_activitie
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    logger.configure_logging(settings.sql_log_level)
+    logger.configure_logging(settings.app_settings.app.logging.sql_log_level)
     oauth_withings.configure(
         WithingsUpdateTokenUseCase(
             request_context_withings_repository,
@@ -49,7 +49,7 @@ async def lifespan(_app: FastAPI):
         )
     )
     schedule_task = None
-    if settings.fitbit_poll_enabled:
+    if settings.app_settings.fitbit.poll.enabled:
         schedule_task = await fitbitpoll.schedule_fitbit_poll(
             local_fitbit_repo_factory=fitbit_repository_factory(),
             remote_fitbit_repo=get_remote_fitbit_repository(),
@@ -62,7 +62,7 @@ async def lifespan(_app: FastAPI):
             local_fitbit_repo_factory=fitbit_repository_factory(),
             activity_type_ids=set(settings.fitbit_daily_activity_type_ids),
             slack_repo=get_slack_repository(),
-            post_time=settings.fitbit_daily_activity_post_time,
+            post_time=settings.app_settings.fitbit.activities.daily_report_time,
         )
     yield
     if schedule_task:

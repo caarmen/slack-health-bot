@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import json
 import re
+from operator import attrgetter
 
 import pytest
 from fastapi.testclient import TestClient
@@ -76,18 +77,18 @@ async def test_fitbit_poll_sleep(
 
     # Mock fitbit endpoint to return no activity data
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1/user/-/activities/list.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
     ).mock(Response(status_code=200, json={"activities": []}))
 
     # Mock fitbit endpoint to return some sleep data
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1.2/user/-/sleep/date/2023-01-23.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-01-23.json",
     ).mock(Response(status_code=200, json=scenario.input_mock_fitbit_response))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     # When we poll for new sleep data
     # Use the client as a context manager so that the app lifespan hook is called
@@ -158,22 +159,28 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
 
     # Mock fitbit endpoint to return no sleep data
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1.2/user/-/sleep/date/2023-01-23.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-01-23.json",
     ).mock(Response(status_code=200, json={"sleep": []}))
 
     # Mock fitbit endpoint to return some activity data
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1/user/-/activities/list.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
     ).mock(Response(status_code=200, json=scenario.input_mock_fitbit_response))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     if scenario.settings_override:
         for key, value in scenario.settings_override.items():
-            monkeypatch.setattr(settings, key, value)
+            settings_attribute_tokens = key.split(".")
+            settings_attribute_to_patch = settings_attribute_tokens.pop()
+            settings_obj_path_to_patch = ".".join(settings_attribute_tokens)
+            settings_obj_to_patch = attrgetter(settings_obj_path_to_patch)(settings)
+            monkeypatch.setattr(
+                settings_obj_to_patch, settings_attribute_to_patch, value
+            )
 
     # When we poll for new sleep data
     # Use the client as a context manager so that the app lifespan hook is called
@@ -219,8 +226,8 @@ async def test_schedule_fitbit_poll(
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    monkeypatch.setattr(settings, "fitbit_poll_enabled", False)
-    monkeypatch.setattr(settings, "fitbit_poll_interval_s", 3)
+    monkeypatch.setattr(settings.app_settings.fitbit.poll, "enabled", False)
+    monkeypatch.setattr(settings.app_settings.fitbit.poll, "interval_seconds", 3)
     sleep_scenario: FitbitSleepScenario = sleep_scenarios["No previous sleep data"]
     activity_scenario: FitbitActivityScenario = activity_scenarios[
         "No previous activity data, new Spinning activity"
@@ -238,16 +245,18 @@ async def test_schedule_fitbit_poll(
 
     # Mock fitbit endpoint to return some sleep and activity data
     respx_mock.get(
-        url=re.compile(f"{settings.fitbit_base_url}1.2/user/-/sleep/date/[0-9-]*.json"),
+        url=re.compile(
+            f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/[0-9-]*.json"
+        ),
     ).mock(Response(status_code=200, json=sleep_scenario.input_mock_fitbit_response))
     respx_mock.get(
-        url=f"{settings.fitbit_base_url}1/user/-/activities/list.json",
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
     ).mock(Response(status_code=200, json=activity_scenario.input_mock_fitbit_response))
 
     # Mock an empty ok response from the slack webhook
-    slack_request = respx_mock.post(f"{settings.slack_webhook_url}").mock(
-        return_value=Response(200)
-    )
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
 
     fitbitconfig.configure(
         UpdateTokenUseCase(

@@ -181,7 +181,7 @@ async def schedule_fitbit_poll(
     local_fitbit_repo_factory: Callable[[], AsyncContextManager[LocalFitbitRepository]],
     remote_fitbit_repo: RemoteFitbitRepository,
     slack_repo: RemoteSlackRepository,
-    initial_delay_s: int = settings.fitbit_poll_interval_s,
+    initial_delay_s: int = settings.app_settings.fitbit.poll.interval_seconds,
     cache: Cache = None,
 ):
     if cache is None:
@@ -197,6 +197,6 @@ async def schedule_fitbit_poll(
                     remote_fitbit_repo=remote_fitbit_repo,
                     slack_repo=slack_repo,
                 )
-            await asyncio.sleep(settings.fitbit_poll_interval_s)
+            await asyncio.sleep(settings.app_settings.fitbit.poll.interval_seconds)
 
     return asyncio.create_task(run_with_delay())
