@@ -75,7 +75,10 @@ class AppSettings(BaseSettings):
     app: App
     withings: Withings
     fitbit: Fitbit
-    model_config = SettingsConfigDict(yaml_file="config/app-merged.yaml")
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__",
+        yaml_file="config/app-merged.yaml",
+    )
 
     @classmethod
     def _load_yaml_file(
@@ -101,14 +104,15 @@ class AppSettings(BaseSettings):
     def settings_customise_sources(
         cls,
         settings_cls: BaseSettings,
-        *args,
+        *,
+        env_settings: PydanticBaseSettingsSource,
         **kwargs,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         merged_config = cls._load_merged_config()
         with open("config/app-merged.yaml", "w", encoding="utf-8") as file:
             yaml.safe_dump(merged_config, file)
         yaml_settings_source = YamlConfigSettingsSource(settings_cls)
-        return (yaml_settings_source,)
+        return (env_settings, yaml_settings_source)
 
 
 class SecretSettings(BaseSettings):
