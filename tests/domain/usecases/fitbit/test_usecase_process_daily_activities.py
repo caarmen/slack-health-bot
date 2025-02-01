@@ -59,9 +59,11 @@ fitbit:
           realtime: false
           fields:
             - distance
+          daily_goals:
+            distance_km: 0.01
 """,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
-    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆""",
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍""",
     ),
     DailyActivityScenario(
         id="fat burn minutes without fat burn minutes",

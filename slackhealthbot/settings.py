@@ -51,10 +51,15 @@ class ReportField(enum.StrEnum):
     out_of_zone_minutes = enum.auto()
 
 
+class Goals(BaseModel):
+    distance_km: float | None = None
+
+
 class Report(BaseModel):
     daily: bool
     realtime: bool
     fields: Optional[list[ReportField]] = None
+    daily_goals: Goals | None = None
 
 
 class ActivityType(BaseModel):

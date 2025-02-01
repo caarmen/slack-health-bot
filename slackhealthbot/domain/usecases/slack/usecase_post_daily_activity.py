@@ -178,7 +178,15 @@ New daily {activity_name} activity from <@{slack_alias}>:
         ReportField.distance in report_settings.fields
         and history.new_daily_activity_stats.sum_distance_km
     ):
-        message += f"""    • Distance: {history.new_daily_activity_stats.sum_distance_km:.3f} km {distance_km_icon} {distance_km_record_text}
+        message += f"    • Distance: {history.new_daily_activity_stats.sum_distance_km:.3f} km {distance_km_icon} {distance_km_record_text}"
+        if (
+            report_settings.daily_goals
+            and report_settings.daily_goals.distance_km
+            and history.new_daily_activity_stats.sum_distance_km
+            > report_settings.daily_goals.distance_km
+        ):
+            message += " Goal reached! 👍"
+        message += """
 """
     if (
         ReportField.fat_burn_minutes in report_settings.fields
