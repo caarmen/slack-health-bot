@@ -132,7 +132,7 @@ class LocalFitbitRepository(ABC):
         self,
         type_ids: set[int],
         when: datetime.date | None = None,
-    ) -> DailyActivityStats | None:
+    ) -> list[DailyActivityStats]:
         """
         Get the stats for the given date and activity types.
         If no date is provided, returns the stats for today.
