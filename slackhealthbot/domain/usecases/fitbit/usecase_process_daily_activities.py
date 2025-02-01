@@ -1,9 +1,9 @@
 import datetime as dt
 
-from slackhealthbot.data.database.models import FitbitDailyActivity
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
+from slackhealthbot.domain.models.activity import DailyActivityStats
 from slackhealthbot.domain.remoterepository.remoteslackrepository import (
     RemoteSlackRepository,
 )
@@ -15,7 +15,7 @@ async def do(
     type_ids: set[int],
     slack_repo: RemoteSlackRepository,
 ):
-    list_daily_activities: list[FitbitDailyActivity] = (
+    list_daily_activities: list[DailyActivityStats] = (
         await local_fitbit_repo.get_daily_activities_by_type(
             type_ids=type_ids,
             when=dt.datetime.now(dt.timezone.utc).date(),
