@@ -31,6 +31,8 @@ fitbit:
         - cardio_minutes
         - peak_minutes
         - out_of_zone_minutes
+      daily_goals:
+        # distance_km: 1.0
 
     activity_types:
       # Configuration specific to activity types.
@@ -55,6 +57,8 @@ fitbit:
           realtime: false
           fields:
              - distance
+          daily_goals:
+            distance_km: 20.0
 
       - name: Spinning
         id: 55001
