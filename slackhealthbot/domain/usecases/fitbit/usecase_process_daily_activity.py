@@ -36,6 +36,26 @@ async def do(
 ):
     now = dt.datetime.now(dt.timezone.utc)
     fitbit_userid = daily_activity.fitbit_userid
+    report_settings = settings.app_settings.fitbit.activities.get_report(
+        activity_type_id=daily_activity.type_id
+    )
+    oldest_daily_activity_stats_in_streak: DailyActivityStats = (
+        await local_fitbit_repo.get_oldest_daily_activity_by_user_and_activity_type_in_streak(
+            fitbit_userid=fitbit_userid,
+            type_id=daily_activity.type_id,
+            before=now,
+            min_distance_km=(
+                report_settings.daily_goals.distance_km
+                if report_settings.daily_goals
+                else None
+            ),
+        )
+    )
+    streak_distance_km_days = (
+        (now.date() - oldest_daily_activity_stats_in_streak.date).days + 1
+        if oldest_daily_activity_stats_in_streak
+        else None
+    )
     user_identity: UserIdentity = (
         await local_fitbit_repo.get_user_identity_by_fitbit_userid(
             fitbit_userid=fitbit_userid
@@ -68,6 +88,7 @@ async def do(
         new_daily_activity_stats=daily_activity,
         all_time_top_daily_activity_stats=all_time_top_daily_activity_stats,
         recent_top_daily_activity_stats=recent_top_daily_activity_stats,
+        streak_distance_km_days=streak_distance_km_days,
     )
 
     await usecase_post_daily_activity.do(

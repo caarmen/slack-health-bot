@@ -139,7 +139,7 @@ async def test_post_daily_activities(
     • Activity count: 1
     • Total duration: 116 minutes ↗️ New record (last 180 days)! 🏆
     • Total calories: 805 ➡️ 
-    • Distance: 9.500 km ➡️ 
+    • Distance: 9.500 km ➡️  1 day streak! 👏
     • Total fat burn minutes: 41 ➡️ 
     • Total cardio minutes: 35 ↗️ 
     • Total peak minutes: 1  New all-time record! 🏆"""

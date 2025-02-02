@@ -186,6 +186,8 @@ New daily {activity_name} activity from <@{slack_alias}>:
             > report_settings.daily_goals.distance_km
         ):
             message += " Goal reached! 👍"
+        if history.streak_distance_km_days:
+            message += f" {history.streak_distance_km_days} day streak! 👏"
         message += """
 """
     if (

@@ -2,6 +2,7 @@ import datetime
 
 from sqlalchemy import and_, desc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from slackhealthbot.core.exceptions import UnknownUserException
 from slackhealthbot.core.models import OAuthFields
@@ -339,6 +340,131 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 .order_by(desc(models.FitbitDailyActivity.date))
             )
         ).first()
+        if not daily_activity:
+            return None
+        return DailyActivityStats(
+            date=daily_activity.date,
+            fitbit_userid=daily_activity.fitbit_user.oauth_userid,
+            slack_alias=daily_activity.fitbit_user.user.slack_alias,
+            type_id=daily_activity.type_id,
+            count_activities=daily_activity.count_activities,
+            sum_calories=daily_activity.sum_calories,
+            sum_distance_km=daily_activity.sum_distance_km,
+            sum_total_minutes=daily_activity.sum_total_minutes,
+            sum_fat_burn_minutes=daily_activity.sum_fat_burn_minutes,
+            sum_cardio_minutes=daily_activity.sum_cardio_minutes,
+            sum_peak_minutes=daily_activity.sum_peak_minutes,
+            sum_out_of_zone_minutes=daily_activity.sum_out_of_zone_minutes,
+        )
+
+    async def get_oldest_daily_activity_by_user_and_activity_type_in_streak(
+        self,
+        fitbit_userid: str,
+        type_id: int,
+        *,
+        before: datetime.date | None = None,
+        min_distance_km: float | None = None,
+    ) -> DailyActivityStats | None:
+        activity_date = before if before else datetime.date.today()
+        today_filters = []
+        yesterday_filters = []
+        yesterday_activity_alias = aliased(models.FitbitDailyActivity)
+        if min_distance_km is not None:
+            today_filters.append(
+                models.FitbitDailyActivity.sum_distance_km >= min_distance_km
+            )
+            yesterday_filters.append(
+                yesterday_activity_alias.sum_distance_km >= min_distance_km
+            )
+        # The idea of this SQL query:
+        # Example:
+        # Our goal is 20km.
+        # We've logged the following activities, ascending cronological order:
+        #   Monday: 21km
+        #   Tuesday: no activity
+        #   Wednesday: 19km
+        #   Thursday: 22km
+        #   Friday: 25km
+        #
+        # Start with a query on the relevant daily activities.
+        #  ("Relevant" means for the given user and activity type, and optionally
+        #  with the given minimum distance_km.)
+        #
+        # Join (outer) on the daily activities table as "yesterday" matching the same "relevant" criteria,
+        # and also with a filter comparing the dates: the initial daily activities
+        # date is one day in the future compared to "yesterday's" daily activities.
+        #
+        # If, on a given day, there was no relevant activity on the previous day, the "yesterday" fields
+        # in the result will be null.
+        #
+        # We add, in the WHERE clause, a condition to look for this "null yesterday".
+        #
+        # The query will thus only return rows for daily activities where there was no daily activity
+        # the previous day.
+        #
+        # We get the most recent of these rows.
+        #
+        # This is the beginning of our streak!
+        statement = (
+            select(models.FitbitDailyActivity)
+            .join(models.FitbitUser)
+            .join(models.User)
+            # Supposing we're currently Friday.
+            #
+            # At this point, we have rows for (descending cronological order):
+            #   Friday: 25km    <--- met goal, in current streak
+            #   Thursday: 22km  <--- met goal, in current streak
+            #   Wednesday: 19km <--- didn't meet goal
+            #   Monday: 21km    <--- met goal, in previous streak
+            .outerjoin(
+                yesterday_activity_alias,
+                and_(
+                    models.FitbitDailyActivity.type_id
+                    == yesterday_activity_alias.type_id,
+                    models.FitbitDailyActivity.fitbit_user_id
+                    == yesterday_activity_alias.fitbit_user_id,
+                    models.FitbitDailyActivity.date
+                    == func.date(yesterday_activity_alias.date, "+1 days"),
+                    *yesterday_filters,
+                ),
+            )
+            # At this point, we have rows for (descending cronological order):
+            #   "Today"             "Yesterday"
+            #   -----------------   ---------------------------------------
+            #   Friday: 25km        Thursday: 22km
+            #   Thursday: 22km      (null - yesterday wasn't at least 20km)
+            #   Wednesday: 19km     (null - no activity on Tuesday)
+            #   Monday: 21km        (null - no activity on Sunday)
+            .where(
+                and_(
+                    models.FitbitDailyActivity.date <= activity_date,
+                    models.FitbitUser.oauth_userid == fitbit_userid,
+                    models.FitbitDailyActivity.type_id == type_id,
+                    yesterday_activity_alias.date
+                    == None,  # noqa E711 (sqlalchemy needs this)
+                    *today_filters,
+                )
+                # At this point, we eliminate some rows:
+                #   Wednesday: was < 20km.
+                #   Friday: it has a non-null value for "Yesterday"
+                #
+                # We now have rows for (descending cronological order):
+                #   "Today"             "Yesterday"
+                #   -----------------   ---------------------------------------
+                #   Thursday: 22km      (null - yesterday wasn't at least 20km)
+                #   Monday: 21km        (null - no activity on Sunday)
+            )
+            .order_by(desc(models.FitbitDailyActivity.date))
+        )
+        daily_activity: models.FitbitDailyActivity = (
+            await self.db.scalars(statement=statement)
+        ).first()
+        # We now take the first row:
+        #   "Today"             "Yesterday"
+        #   -----------------   ---------------------------------------
+        #   Thursday: 22km      (null - yesterday wasn't at least 20km)
+        #
+        # The first day in our streak is Thursday.
         if not daily_activity:
             return None
         return DailyActivityStats(

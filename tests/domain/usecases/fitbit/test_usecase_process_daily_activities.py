@@ -43,11 +43,11 @@ DAILY_ACTIVITY_SCENARIOS = [
     • Activity count: 2
     • Total duration: 15 minutes ↗️ New record (last 180 days)! 🏆
     • Total calories: 250 ↗️ New record (last 180 days)! 🏆
-    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 1 day streak! 👏
     • Total cardio minutes: 12 ↗️ New record (last 180 days)! 🏆""",
     ),
     DailyActivityScenario(
-        id="distance only",
+        id="distance only, met goal",
         custom_conf="""
 fitbit:
   activities:
@@ -63,7 +63,26 @@ fitbit:
             distance_km: 0.01
 """,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
-    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍""",
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 1 day streak! 👏""",
+    ),
+    DailyActivityScenario(
+        id="distance only, didn't meet goal",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: false
+          fields:
+            - distance
+          daily_goals:
+            distance_km: 100
+""",
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆""",
     ),
     DailyActivityScenario(
         id="fat burn minutes without fat burn minutes",
@@ -96,7 +115,7 @@ fitbit:
     • Activity count: 2
     • Total duration: 15 minutes ↗️ New record (last 180 days)! 🏆
     • Total calories: 250 ↗️ New record (last 180 days)! 🏆
-    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 1 day streak! 👏
     • Total cardio minutes: 12 ↗️ New record (last 180 days)! 🏆""",
     ),
 ]
