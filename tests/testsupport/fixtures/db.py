@@ -1,7 +1,9 @@
+import logging
 from pathlib import Path
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from alembic import command
@@ -52,5 +54,10 @@ def setup_db(apply_alembic_migration, connection):
 async def mocked_async_session(async_connection_url: str):
     engine = create_async_engine(async_connection_url)
     session: AsyncSession = async_sessionmaker(bind=engine)()
+
+    def before_cursor_execute(_conn, _cursor, statement, parameters, *args):
+        logging.debug(f"{statement}; args={parameters}")
+
+    event.listen(engine.sync_engine, "before_cursor_execute", before_cursor_execute)
     yield session
     await session.close()

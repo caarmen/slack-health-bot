@@ -1,10 +1,12 @@
+#!/usr/bin/env bash
 rm -rf reports
-LOGGING__SQL_LOG_LEVEL=DEBUG python -m pytest \
+python -m pytest \
   --numprocesses=auto \
   --cov=slackhealthbot \
   --cov-report=xml \
   --cov-report=html \
   --junitxml="reports/junit.xml" \
-  tests
+  tests \
+  $*
 mkdir -p reports
 mv coverage.xml htmlcov reports/.
