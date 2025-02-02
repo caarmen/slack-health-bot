@@ -43,11 +43,11 @@ DAILY_ACTIVITY_SCENARIOS = [
     • Activity count: 2
     • Total duration: 15 minutes ↗️ New record (last 180 days)! 🏆
     • Total calories: 250 ↗️ New record (last 180 days)! 🏆
-    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 1 day streak! 👏
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 2 day streak! 👏
     • Total cardio minutes: 12 ↗️ New record (last 180 days)! 🏆""",
     ),
     DailyActivityScenario(
-        id="distance only, met goal",
+        id="distance only, met goal yesterday and today",
         custom_conf="""
 fitbit:
   activities:
@@ -61,6 +61,25 @@ fitbit:
             - distance
           daily_goals:
             distance_km: 0.01
+""",
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 2 day streak! 👏""",
+    ),
+    DailyActivityScenario(
+        id="distance only, met goal today (not yesterday)",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: false
+          fields:
+            - distance
+          daily_goals:
+            distance_km: 12
 """,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 1 day streak! 👏""",
@@ -115,7 +134,7 @@ fitbit:
     • Activity count: 2
     • Total duration: 15 minutes ↗️ New record (last 180 days)! 🏆
     • Total calories: 250 ↗️ New record (last 180 days)! 🏆
-    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 1 day streak! 👏
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 2 day streak! 👏
     • Total cardio minutes: 12 ↗️ New record (last 180 days)! 🏆""",
     ),
 ]
@@ -148,8 +167,8 @@ async def test_process_daily_activities(  # noqa: PLR0913
             )
     user_factory, _, fitbit_activity_factory = fitbit_factories
     old_date = dt.datetime(2023, 3, 4, 15, 44, 33)
-    recent_date = dt.datetime(2024, 4, 2, 23, 44, 55)
     today = dt.datetime(2024, 8, 2, 10, 44, 55)
+    yesterday = dt.datetime(2024, 8, 1, 10, 40, 3)
     activity_type = 90019
     user: models.User = user_factory.create(slack_alias="jdoe")
 
@@ -183,7 +202,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         updated_at=old_date,
     )
 
-    # Top stats in the recent date.
+    # Top stats for yesterday.
     # - 200 calories
     # - 10km
     # - 11 minutes total
@@ -198,7 +217,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=recent_date,
+        updated_at=yesterday,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -210,7 +229,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=recent_date,
+        updated_at=yesterday,
     )
 
     # Stats for today
