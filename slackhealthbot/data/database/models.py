@@ -1,3 +1,4 @@
+from datetime import date as dt_date
 from datetime import datetime
 from typing import Optional
 
@@ -84,7 +85,7 @@ class FitbitDailyActivity(Base):
     )
     fitbit_user: Mapped["FitbitUser"] = relationship(lazy="joined", join_depth=2)
     type_id: Mapped[int] = mapped_column(primary_key=True)
-    date: Mapped[datetime] = mapped_column(primary_key=True)
+    date: Mapped[dt_date] = mapped_column(primary_key=True)
     count_activities: Mapped[int] = mapped_column()
     sum_calories: Mapped[int] = mapped_column()
     sum_distance_km: Mapped[float] = mapped_column()

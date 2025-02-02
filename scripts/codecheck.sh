@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 error=0
 for project in slackhealthbot alembic tests
 do

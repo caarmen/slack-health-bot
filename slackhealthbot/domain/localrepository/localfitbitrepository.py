@@ -128,6 +128,21 @@ class LocalFitbitRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_oldest_daily_activity_by_user_and_activity_type_in_streak(
+        self,
+        fitbit_userid: str,
+        type_id: int,
+        *,
+        before: datetime.date | None = None,
+        min_distance_km: float | None = None,
+    ) -> DailyActivityStats | None:
+        """
+        Get the oldest activity for the given user and activity type, in the current streak.
+        Returns None if the activity for the given date does not meet the given goal.
+        """
+        pass
+
+    @abstractmethod
     async def get_daily_activities_by_type(
         self,
         type_ids: set[int],
