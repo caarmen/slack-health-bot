@@ -267,6 +267,7 @@ async def test_daily_activities_one_entry(
     )
     expected_daily_activity_stats = [
         DailyActivityStats(
+            date=datetime.date(2024, 1, 2),
             fitbit_userid=user.fitbit.oauth_userid,
             slack_alias="jondoe",
             type_id=1234,

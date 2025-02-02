@@ -1,4 +1,5 @@
 import dataclasses
+import datetime as dt
 from enum import StrEnum, auto
 
 
@@ -43,6 +44,7 @@ class ActivityHistory:
 
 @dataclasses.dataclass
 class DailyActivityStats:
+    date: dt.date
     fitbit_userid: int
     slack_alias: str
     type_id: int

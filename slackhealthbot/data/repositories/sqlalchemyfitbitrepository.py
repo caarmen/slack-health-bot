@@ -342,6 +342,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         if not daily_activity:
             return None
         return DailyActivityStats(
+            date=daily_activity.date,
             fitbit_userid=daily_activity.fitbit_user.oauth_userid,
             slack_alias=daily_activity.fitbit_user.user.slack_alias,
             type_id=daily_activity.type_id,
@@ -374,6 +375,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         )
         return [
             DailyActivityStats(
+                date=daily_activity.date,
                 fitbit_userid=daily_activity.fitbit_user.oauth_userid,
                 slack_alias=daily_activity.fitbit_user.user.slack_alias,
                 type_id=daily_activity.type_id,
