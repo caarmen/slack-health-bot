@@ -98,7 +98,7 @@ fitbit:
           fields:
             - distance
           daily_goals:
-            distance_km: 100
+            distance_km: 18
 """,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆""",
