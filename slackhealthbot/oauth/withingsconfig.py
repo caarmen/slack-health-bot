@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Callable, Coroutine
 
+import httpx
 from authlib.common.urls import add_params_to_qs
 from authlib.integrations.httpx_client.oauth2_client import AsyncOAuth2Client
 from dependency_injector.wiring import Provide, inject
@@ -71,5 +72,8 @@ def configure(
         client_kwargs={
             "is_auth_failure": is_auth_failure,
             "timeout": settings.app_settings.request_timeout_s,
+            "transport": httpx.AsyncHTTPTransport(
+                retries=settings.app_settings.request_retries
+            ),
         },
     )
