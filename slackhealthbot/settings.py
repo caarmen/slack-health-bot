@@ -138,6 +138,7 @@ class Logging(BaseModel):
 
 class AppSettings(BaseSettings):
     server_url: AnyHttpUrl
+    request_timeout_s: float
     database_path: Path = "/tmp/data/slackhealthbot.db"
     logging: Logging
     withings: Withings

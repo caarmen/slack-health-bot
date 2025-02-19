@@ -70,5 +70,6 @@ def configure(
         token_endpoint_auth_method="client_secret_post",
         client_kwargs={
             "is_auth_failure": is_auth_failure,
+            "timeout": settings.app_settings.request_timeout_s,
         },
     )

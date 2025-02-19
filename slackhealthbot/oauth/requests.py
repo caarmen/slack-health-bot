@@ -31,7 +31,6 @@ async def get(
         url,
         params=params,
         token=asdict(token),
-        timeout=30.0,
     )
     if client.client_kwargs["is_auth_failure"](response):
         raise UserLoggedOutException
@@ -54,7 +53,6 @@ async def post(
         url,
         data=data,
         token=asdict(token),
-        timeout=30.0,
     )
     if client.client_kwargs["is_auth_failure"](response):
         raise UserLoggedOutException

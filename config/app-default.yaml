@@ -1,5 +1,6 @@
 # Configuration of the slack-health-bot application
 server_url: "http://localhost:8000/" # The url to access the slack-health-bot server for login.
+request_timeout_s: 30.0 # The timeout in seconds for http requests made to withings, fitbit, and slack.
 database_path: "/tmp/data/slackhealthbot.db" # The location to the database file.
 logging:
   sql_log_level: "WARNING"

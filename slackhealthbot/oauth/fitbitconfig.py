@@ -52,5 +52,6 @@ def configure(
         client_kwargs={
             "code_challenge_method": "S256",
             "is_auth_failure": is_auth_failure,
+            "timeout": settings.app_settings.request_timeout_s,
         },
     )
