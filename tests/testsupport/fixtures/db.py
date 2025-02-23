@@ -51,13 +51,16 @@ def setup_db(apply_alembic_migration, connection):
 
 
 @pytest_asyncio.fixture
-async def mocked_async_session(async_connection_url: str):
-    engine = create_async_engine(async_connection_url)
-    session: AsyncSession = async_sessionmaker(bind=engine)()
+def test_engine(async_connection_url: str):
+    return create_async_engine(async_connection_url)
+
+@pytest_asyncio.fixture
+async def mocked_async_session(test_engine):
+    session: AsyncSession = async_sessionmaker(bind=test_engine)()
 
     def before_cursor_execute(_conn, _cursor, statement, parameters, *args):
         logging.debug(f"{statement}; args={parameters}")
 
-    event.listen(engine.sync_engine, "before_cursor_execute", before_cursor_execute)
+    event.listen(test_engine.sync_engine, "before_cursor_execute", before_cursor_execute)
     yield session
     await session.close()
