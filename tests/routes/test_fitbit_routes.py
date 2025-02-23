@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import json
 import re
@@ -6,7 +7,7 @@ from operator import attrgetter
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from httpx import Response
+from httpx import ASGITransport, AsyncClient, Response
 from respx import MockRouter
 
 from slackhealthbot.data.database.models import FitbitUser, User
@@ -14,6 +15,7 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
 from slackhealthbot.domain.models.activity import ActivityData
+from slackhealthbot.main import app, lifespan
 from slackhealthbot.settings import Settings
 from tests.testsupport.factories.factories import (
     FitbitActivityFactory,
@@ -206,7 +208,7 @@ async def test_activity_notification(  # noqa PLR0913
 
 
 @pytest.mark.asyncio
-async def test_duplicate_activity_notification(
+async def test_duplicate_activity_sequential_notification(
     local_fitbit_repository: LocalFitbitRepository,
     client: TestClient,
     respx_mock: MockRouter,
@@ -215,7 +217,7 @@ async def test_duplicate_activity_notification(
 ):
     """
     Given a user
-    When we receive the callback twice from fitbit that a new activity is available
+    When we receive the callback twice sequentially from fitbit that a new activity is available
     Then the latest activity is updated in the database,
     And the message is posted to slack only once with the correct pattern.
     """
@@ -297,6 +299,104 @@ async def test_duplicate_activity_notification(
     # Then we don't post to stack a second time
     assert activity_request.call_count == 1
     assert slack_request.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_duplicate_activity_parallel_notification(
+    local_fitbit_repository: LocalFitbitRepository,
+    respx_mock: MockRouter,
+    fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
+    settings: Settings,
+):
+    """
+    Given a user
+    When we receive the callback multiple times in parallel from fitbit that a new activity is available
+    Then the latest activity is updated in the database,
+    And the message is posted to slack only once with the correct pattern.
+    """
+
+    parallel_requests_count = 10
+    user_factory, fitbit_user_factory, _ = fitbit_factories
+    activity_type_id = 55001
+    scenario: FitbitActivityScenario = activity_scenarios[
+        "No previous activity data, new Spinning activity"
+    ]
+
+    # Given a user with the given previous activity data
+    user: User = user_factory.create(fitbit=None)
+    fitbit_user: FitbitUser = fitbit_user_factory.create(
+        user_id=user.id,
+        oauth_expiration_date=datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(days=1),
+    )
+
+    def delayed_response_side_effect(delay_s: float):
+        async def side_effect(request):
+            await asyncio.sleep(delay=delay_s)
+            return Response(status_code=200, json=scenario.input_mock_fitbit_response)
+
+        return side_effect
+
+    # Mock fitbit endpoint to return some activity data
+    activity_request = respx_mock.get(
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
+    )
+    activity_request.side_effect = [
+        delayed_response_side_effect(
+            float(parallel_requests_count - x) / parallel_requests_count
+        )
+        for x in range(parallel_requests_count)
+    ]
+
+    # Mock an empty ok response from the slack webhook
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
+
+    # When we receive the callback from fitbit that a new activity is available
+    transport = ASGITransport(app=app)
+
+    async with lifespan(app):
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+        ) as ac:
+
+            async def post_webhook():
+                response = await ac.post(
+                    "/fitbit-notification-webhook/",
+                    content=json.dumps(
+                        [
+                            {
+                                "ownerId": user.fitbit.oauth_userid,
+                                "date": "2023-05-12",
+                                "collectionType": "activities",
+                            }
+                        ]
+                    ),
+                )
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
+            async with asyncio.TaskGroup() as tg:
+                for _ in range(10):
+                    tg.create_task(post_webhook())
+
+    # Then the latest activity data is updated in the database
+    assert activity_request.call_count == parallel_requests_count
+    repo_activity: ActivityData = (
+        await local_fitbit_repository.get_latest_activity_by_user_and_type(
+            fitbit_userid=fitbit_user.oauth_userid,
+            type_id=activity_type_id,
+        )
+    )
+    assert repo_activity.log_id == scenario.expected_new_last_activity_log_id
+
+    # And the message was sent to slack as expected
+    assert slack_request.call_count == 1
+    actual_message = json.loads(slack_request.calls[0].request.content)["text"].replace(
+        "\n", ""
+    )
+    assert "None" not in actual_message
 
 
 @pytest.mark.asyncio
