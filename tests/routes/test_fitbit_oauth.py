@@ -170,7 +170,20 @@ async def test_refresh_token_fail(
     # Mock fitbit oauth refresh token failure
     oauth_token_refresh_request = respx_mock.post(
         url=f"{settings.fitbit_oauth_settings.base_url}oauth2/token",
-    ).mock(Response(status_code=401))
+    ).mock(
+        Response(
+            status_code=400,
+            json={
+                "errors": [
+                    {
+                        "errorType": "invalid_grant",
+                        "message": "Refresh token invalid: gibberishrefreshtoken. Visit https://dev.fitbit.com/docs/oauth2 for more information on the Fitbit Web API authorization process.",
+                    }
+                ],
+                "success": False,
+            },
+        )
+    )
 
     # Mock an empty ok response from the slack webhook
     slack_request = respx_mock.post(
@@ -345,7 +358,20 @@ async def test_logged_out(
     # Mock fitbit endpoint to return an unauthorized error
     fitbit_activity_request = respx_mock.get(
         url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
-    ).mock(Response(status_code=401))
+    ).mock(
+        Response(
+            status_code=401,
+            json={
+                "success": False,
+                "errors": [
+                    {
+                        "errorType": "invalid_token",
+                        "message": "Access token invalid: gibberishtoken. Visit https://dev.fitbit.com/docs/oauth2 for more information on the Fitbit Web API authorization process.",
+                    }
+                ],
+            },
+        )
+    )
 
     # Mock an empty ok response from the slack webhook
     slack_request = respx_mock.post(
