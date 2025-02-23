@@ -31,7 +31,10 @@ def fitbit_compliance_fix(session: AsyncOAuth2Client):
 
 
 def is_auth_failure(response) -> bool:
-    return response.status_code != status.HTTP_200_OK
+    if response.status_code != status.HTTP_200_OK:
+        logging.warning(f"Auth failure {response.json()}")
+        return True
+    return False
 
 
 @inject
