@@ -14,6 +14,7 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
 from slackhealthbot.domain.models.activity import ActivityData
+from slackhealthbot.domain.models.sleep import SleepData
 from slackhealthbot.main import app, lifespan
 from slackhealthbot.settings import Settings
 from tests.testsupport.actions.parallel_requests import (
@@ -25,6 +26,7 @@ from tests.testsupport.factories.factories import (
     FitbitUserFactory,
     UserFactory,
 )
+from tests.testsupport.mock.builtins import freeze_time
 from tests.testsupport.testdata.fitbit_scenarios import (
     FitbitActivityScenario,
     FitbitSleepScenario,
@@ -208,6 +210,174 @@ async def test_activity_notification(  # noqa PLR0913
         assert "None" not in actual_message
     else:
         assert not slack_request.calls
+
+
+@pytest.mark.asyncio
+async def test_multiple_sleep_notifications(  # noqa PLR0913
+    local_fitbit_repository: LocalFitbitRepository,
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    respx_mock: MockRouter,
+    fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
+    settings: Settings,
+):
+    """
+    Given a user with a given previous sleep logged
+    When we receive multiple callbacks from fitbit that new different sleep logs are available
+    Then the latest sleep is updated in the database,
+    And the messages are posted to slack with the correct patterns.
+    """
+
+    from slackhealthbot.routers.fitbit import datetime as dt_to_freeze
+
+    user_factory, fitbit_user_factory, _ = fitbit_factories
+
+    # Given a user with the given previous sleep data
+    user: User = user_factory.create(fitbit=None)
+    fitbit_user: FitbitUser = fitbit_user_factory.create(
+        user_id=user.id,
+        oauth_expiration_date=datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(days=1),
+        last_sleep_start_time=datetime.datetime(2023, 5, 11, 23, 39, 0),
+        last_sleep_end_time=datetime.datetime(2023, 5, 12, 8, 28, 0),
+        last_sleep_sleep_minutes=449,
+        last_sleep_wake_minutes=80,
+    )
+
+    # Mock an empty ok response from the slack webhook
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
+
+    # Mock fitbit endpoint to return some sleep data
+    respx_mock.get(
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-05-13.json",
+    ).mock(
+        Response(
+            status_code=200,
+            json={
+                "sleep": [
+                    {
+                        "startTime": "2023-05-13T00:40:00.000",
+                        "endTime": "2023-05-13T09:27:30.000",
+                        "duration": 31620000,
+                        "type": "classic",
+                        "isMainSleep": True,
+                        "levels": {
+                            "summary": {
+                                "asleep": {"minutes": 495},
+                                "awake": {"minutes": 130},
+                            },
+                        },
+                    },
+                ]
+            },
+        )
+    )
+
+    # When we receive the first callback from fitbit that new sleep is available
+    freeze_time(
+        monkeypatch,
+        dt_module_to_freeze=dt_to_freeze,
+        frozen_datetime_args=(2023, 5, 12, 9, 0, 0),
+    )
+    with client:
+        response = client.post(
+            "/fitbit-notification-webhook/",
+            content=json.dumps(
+                [
+                    {
+                        "ownerId": user.fitbit.oauth_userid,
+                        "date": "2023-05-13",
+                        "collectionType": "sleep",
+                    }
+                ]
+            ),
+        )
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    # Then the last sleep data is updated in the database
+    actual_last_sleep_data = await local_fitbit_repository.get_sleep_by_fitbit_userid(
+        fitbit_userid=fitbit_user.oauth_userid,
+    )
+    assert actual_last_sleep_data == SleepData(
+        start_time=datetime.datetime(2023, 5, 13, 0, 40, 0),
+        end_time=datetime.datetime(2023, 5, 13, 9, 27, 30),
+        sleep_minutes=495,
+        wake_minutes=130,
+    )
+
+    # And the message was sent to slack as expected
+    assert slack_request.call_count == 1
+    actual_message = json.loads(slack_request.calls[-1].request.content)[
+        "text"
+    ].replace("\n", "")
+    assert re.search("⬆️.*⬆️.*⬆️.*⬆️", actual_message)
+
+    # When we receive the second callback from fitbit that new sleep is available
+    freeze_time(
+        monkeypatch,
+        dt_module_to_freeze=dt_to_freeze,
+        frozen_datetime_args=(2023, 5, 14, 10, 0, 0),
+    )
+    respx_mock.get(
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-05-14.json",
+    ).mock(
+        Response(
+            status_code=200,
+            json={
+                "sleep": [
+                    {
+                        "startTime": "2023-05-14T00:40:00.000",
+                        "endTime": "2023-05-14T09:27:30.000",
+                        "duration": 31620000,
+                        "type": "classic",
+                        "isMainSleep": True,
+                        "levels": {
+                            "summary": {
+                                "asleep": {"minutes": 500},
+                                "awake": {"minutes": 135},
+                            },
+                        },
+                    },
+                ]
+            },
+        )
+    )
+    with client:
+        response = client.post(
+            "/fitbit-notification-webhook/",
+            content=json.dumps(
+                [
+                    {
+                        "ownerId": user.fitbit.oauth_userid,
+                        "date": "2023-05-14",
+                        "collectionType": "sleep",
+                    }
+                ]
+            ),
+        )
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    # Then the last sleep data is updated in the database
+    actual_last_sleep_data = await local_fitbit_repository.get_sleep_by_fitbit_userid(
+        fitbit_userid=fitbit_user.oauth_userid,
+    )
+    assert actual_last_sleep_data == SleepData(
+        start_time=datetime.datetime(2023, 5, 14, 0, 40, 0),
+        end_time=datetime.datetime(2023, 5, 14, 9, 27, 30),
+        sleep_minutes=500,
+        wake_minutes=135,
+    )
+
+    # And the message was sent to slack as expected
+    assert slack_request.call_count == 2  # noqa PLR2004
+    actual_message = json.loads(slack_request.calls[-1].request.content)[
+        "text"
+    ].replace("\n", "")
+    assert re.search("➡️.*➡️.*➡️.*➡️", actual_message)
 
 
 @pytest.mark.asyncio
