@@ -1,14 +1,27 @@
+from typing import AsyncGenerator
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from slackhealthbot.main import app
 from slackhealthbot.routers.dependencies import get_db
 from slackhealthbot.settings import Settings
 
 
+@pytest.fixture(autouse=True)
+def setup_app_db(
+    mocked_async_session_generator: AsyncGenerator[AsyncSession, None],
+):
+    async def db_override():
+        async for session in mocked_async_session_generator():
+            yield session
+
+    app.dependency_overrides[get_db] = db_override
+
+
 @pytest.fixture
-def client(mocked_async_session) -> TestClient:
-    app.dependency_overrides[get_db] = lambda: mocked_async_session
+def client() -> TestClient:
     return TestClient(app)
 
 

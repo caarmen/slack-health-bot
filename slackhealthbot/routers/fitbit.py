@@ -1,5 +1,6 @@
 import datetime
 import logging
+from asyncio import Lock
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Request, Response, status
@@ -91,6 +92,7 @@ class FitbitNotification(BaseModel):
 
 
 last_processed_fitbit_notification_per_user: dict[str, datetime.datetime] = {}
+last_processed_fitbit_notification_lock = Lock()
 
 DEBOUNCE_NOTIFICATION_DELAY_S = 10
 
@@ -124,39 +126,42 @@ async def fitbit_notification_webhook(
 ):
     logging.info(f"fitbit_notification_webhook: {notifications}")
     for notification in notifications:
-        if _is_fitbit_notification_processed(notification):
-            logging.info("fitbit_notificaiton_webhook: skipping duplicate notification")
-            continue
+        async with last_processed_fitbit_notification_lock:
+            if _is_fitbit_notification_processed(notification):
+                logging.info(
+                    "fitbit_notificaiton_webhook: skipping duplicate notification"
+                )
+                continue
 
-        try:
-            if notification.collectionType == "sleep":
-                new_sleep_data = await usecase_process_new_sleep.do(
-                    local_fitbit_repo=local_fitbit_repo,
-                    remote_fitbit_repo=remote_fitbit_repo,
+            try:
+                if notification.collectionType == "sleep":
+                    new_sleep_data = await usecase_process_new_sleep.do(
+                        local_fitbit_repo=local_fitbit_repo,
+                        remote_fitbit_repo=remote_fitbit_repo,
+                        slack_repo=slack_repo,
+                        fitbit_userid=notification.ownerId,
+                        when=notification.date,
+                    )
+                    if new_sleep_data:
+                        _mark_fitbit_notification_processed(notification)
+                elif notification.collectionType == "activities":
+                    activity_history = await usecase_process_new_activity.do(
+                        local_fitbit_repo=local_fitbit_repo,
+                        remote_fitbit_repo=remote_fitbit_repo,
+                        slack_repo=slack_repo,
+                        fitbit_userid=notification.ownerId,
+                        when=datetime.datetime.now(),
+                    )
+                    if activity_history:
+                        _mark_fitbit_notification_processed(notification)
+            except UserLoggedOutException:
+                await usecase_post_user_logged_out.do(
+                    fitbit_repo=local_fitbit_repo,
                     slack_repo=slack_repo,
                     fitbit_userid=notification.ownerId,
-                    when=notification.date,
                 )
-                if new_sleep_data:
-                    _mark_fitbit_notification_processed(notification)
-            elif notification.collectionType == "activities":
-                activity_history = await usecase_process_new_activity.do(
-                    local_fitbit_repo=local_fitbit_repo,
-                    remote_fitbit_repo=remote_fitbit_repo,
-                    slack_repo=slack_repo,
-                    fitbit_userid=notification.ownerId,
-                    when=datetime.datetime.now(),
-                )
-                if activity_history:
-                    _mark_fitbit_notification_processed(notification)
-        except UserLoggedOutException:
-            await usecase_post_user_logged_out.do(
-                fitbit_repo=local_fitbit_repo,
-                slack_repo=slack_repo,
-                fitbit_userid=notification.ownerId,
-            )
-            break
-        except UnknownUserException:
-            logging.info("fitbit_notification_webhook: unknown user")
-            return Response(status_code=status.HTTP_404_NOT_FOUND)
+                break
+            except UnknownUserException:
+                logging.info("fitbit_notification_webhook: unknown user")
+                return Response(status_code=status.HTTP_404_NOT_FOUND)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
