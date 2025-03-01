@@ -375,7 +375,7 @@ async def test_duplicate_activity_parallel_notification(
         )
 
     # Then the latest activity data is updated in the database
-    assert activity_request.call_count == parallel_requests_count
+    assert activity_request.call_count == 1
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
             fitbit_userid=fitbit_user.oauth_userid,

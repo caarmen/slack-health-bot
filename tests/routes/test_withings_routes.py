@@ -312,7 +312,7 @@ async def test_duplicate_weight_parallel_notification(
         )
 
     # Then the last_weight is updated in the database
-    assert weight_request.call_count == parallel_requests_count
+    assert weight_request.call_count == 1
     fitness_data: FitnessData = (
         await local_withings_repository.get_fitness_data_by_withings_userid(
             withings_userid=db_withings_user.oauth_userid,

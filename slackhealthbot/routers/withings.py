@@ -1,4 +1,5 @@
 import logging
+from asyncio import Lock
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Request, Response, status
@@ -83,6 +84,7 @@ async def get_withings_authorization(
 
 
 last_processed_withings_notification_per_user = {}
+last_processed_withings_notification_lock = Lock()
 
 
 class WithingsNotification(BaseModel):
@@ -110,34 +112,37 @@ async def withings_notification_webhook(
         "withings_notification_webhook: "
         + f"userid={notification.userid}, startdate={notification.startdate}, enddate={notification.enddate}"
     )
-    if last_processed_withings_notification_per_user.get(notification.userid, None) != (
-        notification.startdate,
-        notification.enddate,
-    ):
-        try:
-            await usecase_process_new_weight.do(
-                local_withings_repo=withings_local_repo,
-                remote_withings_repo=withings_remote_repo,
-                slack_repo=slack_repo,
-                new_weight_parameters=NewWeightParameters(
+    async with last_processed_withings_notification_lock:
+        if last_processed_withings_notification_per_user.get(
+            notification.userid, None
+        ) != (
+            notification.startdate,
+            notification.enddate,
+        ):
+            try:
+                await usecase_process_new_weight.do(
+                    local_withings_repo=withings_local_repo,
+                    remote_withings_repo=withings_remote_repo,
+                    slack_repo=slack_repo,
+                    new_weight_parameters=NewWeightParameters(
+                        withings_userid=notification.userid,
+                        startdate=notification.startdate,
+                        enddate=notification.enddate,
+                    ),
+                )
+                last_processed_withings_notification_per_user[notification.userid] = (
+                    notification.startdate,
+                    notification.enddate,
+                )
+            except UserLoggedOutException:
+                await usecase_post_user_logged_out.do(
+                    withings_repo=withings_local_repo,
+                    slack_repo=slack_repo,
                     withings_userid=notification.userid,
-                    startdate=notification.startdate,
-                    enddate=notification.enddate,
-                ),
-            )
-            last_processed_withings_notification_per_user[notification.userid] = (
-                notification.startdate,
-                notification.enddate,
-            )
-        except UserLoggedOutException:
-            await usecase_post_user_logged_out.do(
-                withings_repo=withings_local_repo,
-                slack_repo=slack_repo,
-                withings_userid=notification.userid,
-            )
-        except UnknownUserException:
-            logging.info("withings_notification_webhook: unknown user")
-            return Response(status_code=status.HTTP_404_NOT_FOUND)
-    else:
-        logging.info("Ignoring duplicate withings notification")
+                )
+            except UnknownUserException:
+                logging.info("withings_notification_webhook: unknown user")
+                return Response(status_code=status.HTTP_404_NOT_FOUND)
+        else:
+            logging.info("Ignoring duplicate withings notification")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
