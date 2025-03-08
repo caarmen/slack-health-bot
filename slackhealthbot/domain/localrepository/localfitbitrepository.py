@@ -128,17 +128,27 @@ class LocalFitbitRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_oldest_daily_activity_by_user_and_activity_type_in_streak(
+    async def get_daily_activity_streak_days_count_for_user_and_activity_type(
         self,
         fitbit_userid: str,
         type_id: int,
         *,
         before: datetime.date | None = None,
         min_distance_km: float | None = None,
-    ) -> DailyActivityStats | None:
+    ) -> int:
         """
-        Get the oldest activity for the given user and activity type, in the current streak.
-        Returns None if the activity for the given date does not meet the given goal.
+        The streak is the number of consecutive days, up until and including the given "before" date
+        for which activity meeting a critera was logged.
+
+        If before is not provided, before is set to the current date.
+
+        If min_distance_km is provided, only days where the logged distance is at least
+        this value count toward the streak.
+
+        :return: 0 if no activity is logged for the "before" date, or if activity was logged
+            for the "before" date but does not meet the given min_distance_km.
+
+        :return: the number of days in the streak otherwise.
         """
         pass
 

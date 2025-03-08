@@ -40,19 +40,10 @@ async def do(
     if goal_distance_km and daily_activity.sum_distance_km < goal_distance_km:
         return None
 
-    # Get the oldest day in the current streak, if it exists.
-    oldest_daily_activity_stats_in_streak: DailyActivityStats = (
-        await local_fitbit_repo.get_oldest_daily_activity_by_user_and_activity_type_in_streak(
-            fitbit_userid=fitbit_userid,
-            type_id=daily_activity.type_id,
-            before=end_date,
-            min_distance_km=goal_distance_km,
-        )
-    )
-
     # Return the number of days since the first day in the streak, including the given end_date.
-    return (
-        (end_date - oldest_daily_activity_stats_in_streak.date).days + 1
-        if oldest_daily_activity_stats_in_streak
-        else None
+    return await local_fitbit_repo.get_daily_activity_streak_days_count_for_user_and_activity_type(
+        fitbit_userid=fitbit_userid,
+        type_id=daily_activity.type_id,
+        before=end_date,
+        min_distance_km=goal_distance_km,
     )

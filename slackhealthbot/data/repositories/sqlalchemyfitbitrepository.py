@@ -357,15 +357,38 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             sum_out_of_zone_minutes=daily_activity.sum_out_of_zone_minutes,
         )
 
-    async def get_oldest_daily_activity_by_user_and_activity_type_in_streak(
+    async def get_daily_activity_streak_days_count_for_user_and_activity_type(
         self,
         fitbit_userid: str,
         type_id: int,
         *,
         before: datetime.date | None = None,
         min_distance_km: float | None = None,
-    ) -> DailyActivityStats | None:
+    ) -> int:
         activity_date = before if before else datetime.date.today()
+        before_date_daily_activity: models.FitbitDailyActivity = (
+            await self.db.scalars(
+                statement=select(models.FitbitDailyActivity)
+                .join(models.FitbitUser)
+                .join(models.User)
+                .where(
+                    and_(
+                        models.FitbitDailyActivity.date == activity_date,
+                        models.FitbitUser.oauth_userid == fitbit_userid,
+                        models.FitbitDailyActivity.type_id == type_id,
+                    )
+                )
+                .order_by(desc(models.FitbitDailyActivity.date))
+            )
+        ).first()
+
+        # If the goal wasn't met today, we're not in a streak. Return 0.
+        if not before_date_daily_activity or (
+            min_distance_km is not None
+            and before_date_daily_activity.sum_distance_km < min_distance_km
+        ):
+            return 0
+
         today_filters = []
         yesterday_filters = []
         yesterday_activity_alias = aliased(models.FitbitDailyActivity)
@@ -411,7 +434,6 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         statement = (
             select(models.FitbitDailyActivity)
             .join(models.FitbitUser)
-            .join(models.User)
             # Supposing we're currently Friday.
             #
             # At this point, we have rows for (descending cronological order):
@@ -472,21 +494,8 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         #
         # The first day in our streak is Thursday.
         if not daily_activity:
-            return None
-        return DailyActivityStats(
-            date=daily_activity.date,
-            fitbit_userid=daily_activity.fitbit_user.oauth_userid,
-            slack_alias=daily_activity.fitbit_user.user.slack_alias,
-            type_id=daily_activity.type_id,
-            count_activities=daily_activity.count_activities,
-            sum_calories=daily_activity.sum_calories,
-            sum_distance_km=daily_activity.sum_distance_km,
-            sum_total_minutes=daily_activity.sum_total_minutes,
-            sum_fat_burn_minutes=daily_activity.sum_fat_burn_minutes,
-            sum_cardio_minutes=daily_activity.sum_cardio_minutes,
-            sum_peak_minutes=daily_activity.sum_peak_minutes,
-            sum_out_of_zone_minutes=daily_activity.sum_out_of_zone_minutes,
-        )
+            return 0
+        return (activity_date - daily_activity.date).days + 1
 
     async def get_daily_activities_by_type(
         self,
