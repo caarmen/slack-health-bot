@@ -364,6 +364,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         *,
         before: datetime.date | None = None,
         min_distance_km: float | None = None,
+        days_without_activies_break_streak=True,
     ) -> int:
         activity_date = before if before else datetime.date.today()
         before_date_daily_activity: models.FitbitDailyActivity = (
@@ -389,11 +390,16 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         ):
             return 0
 
-        return await self._calculate_streak_strict_mode(
-            fitbit_userid=fitbit_userid,
-            type_id=type_id,
-            up_to_date=activity_date,
-            min_distance_km=min_distance_km,
+        if days_without_activies_break_streak:
+            return await self._calculate_streak_strict_mode(
+                fitbit_userid=fitbit_userid,
+                type_id=type_id,
+                up_to_date=activity_date,
+                min_distance_km=min_distance_km,
+            )
+
+        raise NotImplementedError(
+            "days_without_activies_break_streak=False not yet supported"
         )
 
     async def _calculate_streak_strict_mode(

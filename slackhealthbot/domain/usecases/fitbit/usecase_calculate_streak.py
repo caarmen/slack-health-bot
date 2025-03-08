@@ -10,7 +10,7 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
 from slackhealthbot.domain.models.activity import (
     DailyActivityStats,
 )
-from slackhealthbot.settings import Settings
+from slackhealthbot.settings import Settings, StreakMode
 
 
 @inject
@@ -46,4 +46,6 @@ async def do(
         type_id=daily_activity.type_id,
         before=end_date,
         min_distance_km=goal_distance_km,
+        days_without_activies_break_streak=report_settings.streak_mode
+        == StreakMode.strict,
     )

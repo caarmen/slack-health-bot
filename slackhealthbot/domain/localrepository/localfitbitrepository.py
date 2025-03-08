@@ -135,15 +135,25 @@ class LocalFitbitRepository(ABC):
         *,
         before: datetime.date | None = None,
         min_distance_km: float | None = None,
+        days_without_activies_break_streak=True,
     ) -> int:
         """
-        The streak is the number of consecutive days, up until and including the given "before" date
+        The streak is the number of days, up until and including the given "before" date
         for which activity meeting a critera was logged.
+
+        Currently the only supported criteria is min_distance_km.
 
         If before is not provided, before is set to the current date.
 
         If min_distance_km is provided, only days where the logged distance is at least
         this value count toward the streak.
+
+        :param days_without_activities_break_streak: If True, then days without the given
+            type of activity logged for the user will break the streak.
+
+            If False, then these days don't count toward the number of days in the streak
+            count, but they don't break the streak. Only days with activity logs but not
+            matching the criteria will break the streak.
 
         :return: 0 if no activity is logged for the "before" date, or if activity was logged
             for the "before" date but does not meet the given min_distance_km.

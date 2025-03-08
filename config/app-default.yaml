@@ -35,6 +35,19 @@ fitbit:
         - out_of_zone_minutes
       daily_goals:
         # distance_km: 1.0
+      # Possible options for streak_mode (defaut is strict):
+      #
+      # - strict: the streak is the number of consecutive days, up to and including today,
+      #   for which an activity was logged and any daily_goals were met.
+      #   Days with no logged activity break the streak.
+      #
+      # - lax: the streak is the number of possibily non-consecutive days, up to
+      #   and including today, for which an activity was logged and any daily_goals were
+      #   met. The streak starts after the last date for which an activity was logged
+      #   which didn't meet the daily_goals, or from the beginning of the history if no
+      #   days were logged which didn't meet the daily_goals.
+      #   Days with no logged activity are ignored.
+      streak_mode: strict
 
     activity_types:
       # Configuration specific to activity types.
