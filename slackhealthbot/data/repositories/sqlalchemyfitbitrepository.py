@@ -379,13 +379,16 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # The idea of this SQL query:
         # Example:
         # Our goal is 20km.
-        # We've logged the following activities, ascending cronological order:
-        #   Monday: 21km
-        #   Tuesday: no activity
-        #   Wednesday: 19km
-        #   Thursday: 22km
-        #   Friday: 25km
+        # We've logged the following activities, descending cronological order:
         #
+        # Friday: 25km
+        # Thursday: 22km
+        # Wednesday: no activity
+        # Tuesday: 21km
+        # Monday: 15km
+        # Sunday: no activity
+        # Saturday: 23km
+
         # Start with a query on the relevant daily activities.
         #  ("Relevant" means for the given user and activity type, and optionally
         #  with the given minimum distance_km.)
@@ -412,10 +415,11 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             # Supposing we're currently Friday.
             #
             # At this point, we have rows for (descending cronological order):
-            #   Friday: 25km    <--- met goal, in current streak
-            #   Thursday: 22km  <--- met goal, in current streak
-            #   Wednesday: 19km <--- didn't meet goal
-            #   Monday: 21km    <--- met goal, in previous streak
+            #   Friday: 25km   <--- met goal, in current streak
+            #   Thursday: 22km <--- met goal, in current streak
+            #   Tuesday: 21km  <--- met goal
+            #   Monday: 15km   <--- didn't meet goal
+            #   Saturday: 23km <--- met goal
             .outerjoin(
                 yesterday_activity_alias,
                 and_(
@@ -432,9 +436,10 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             #   "Today"             "Yesterday"
             #   -----------------   ---------------------------------------
             #   Friday: 25km        Thursday: 22km
-            #   Thursday: 22km      (null - yesterday wasn't at least 20km)
-            #   Wednesday: 19km     (null - no activity on Tuesday)
-            #   Monday: 21km        (null - no activity on Sunday)
+            #   Thursday: 22km      (null - no activity on Wednesday)
+            #   Tuesday: 21km       (null - Monday wasn't at least 20km)
+            #   Monday: 15km        (null - no activity on Sunday)
+            #   Saturday: 23km      (null - no activity before)
             .where(
                 and_(
                     models.FitbitDailyActivity.date <= activity_date,
@@ -445,14 +450,15 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                     *today_filters,
                 )
                 # At this point, we eliminate some rows:
-                #   Wednesday: was < 20km.
                 #   Friday: it has a non-null value for "Yesterday"
+                #   Monday: was < 20km.
                 #
                 # We now have rows for (descending cronological order):
                 #   "Today"             "Yesterday"
                 #   -----------------   ---------------------------------------
-                #   Thursday: 22km      (null - yesterday wasn't at least 20km)
-                #   Monday: 21km        (null - no activity on Sunday)
+                #   Thursday: 22km      (null - no activity on Wednesday)
+                #   Tuesday: 21km       (null - Monday wasn't at least 20km)
+                #   Saturday: 23km      (null - no activity before)
             )
             .order_by(desc(models.FitbitDailyActivity.date))
         )
@@ -462,7 +468,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # We now take the first row:
         #   "Today"             "Yesterday"
         #   -----------------   ---------------------------------------
-        #   Thursday: 22km      (null - yesterday wasn't at least 20km)
+        #   Thursday: 22km      (null - no activity on Wednesday)
         #
         # The first day in our streak is Thursday.
         if not daily_activity:
