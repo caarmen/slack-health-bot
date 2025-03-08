@@ -389,6 +389,20 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         ):
             return 0
 
+        return await self._calculate_streak_strict_mode(
+            fitbit_userid=fitbit_userid,
+            type_id=type_id,
+            up_to_date=activity_date,
+            min_distance_km=min_distance_km,
+        )
+
+    async def _calculate_streak_strict_mode(
+        self,
+        fitbit_userid: str,
+        type_id: int,
+        up_to_date: datetime.date,
+        min_distance_km: float | None,
+    ):
         today_filters = []
         yesterday_filters = []
         yesterday_activity_alias = aliased(models.FitbitDailyActivity)
@@ -464,7 +478,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             #   Saturday: 23km      (null - no activity before)
             .where(
                 and_(
-                    models.FitbitDailyActivity.date <= activity_date,
+                    models.FitbitDailyActivity.date <= up_to_date,
                     models.FitbitUser.oauth_userid == fitbit_userid,
                     models.FitbitDailyActivity.type_id == type_id,
                     yesterday_activity_alias.date
@@ -495,7 +509,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # The first day in our streak is Thursday.
         if not daily_activity:
             return 0
-        return (activity_date - daily_activity.date).days + 1
+        return (up_to_date - daily_activity.date).days + 1
 
     async def get_daily_activities_by_type(
         self,
