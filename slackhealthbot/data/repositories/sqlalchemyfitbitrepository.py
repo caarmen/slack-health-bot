@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import and_, desc, func, select, update
+from sqlalchemy import and_, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -357,15 +357,61 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             sum_out_of_zone_minutes=daily_activity.sum_out_of_zone_minutes,
         )
 
-    async def get_oldest_daily_activity_by_user_and_activity_type_in_streak(
+    async def get_daily_activity_streak_days_count_for_user_and_activity_type(
         self,
         fitbit_userid: str,
         type_id: int,
         *,
         before: datetime.date | None = None,
         min_distance_km: float | None = None,
-    ) -> DailyActivityStats | None:
+        days_without_activies_break_streak=True,
+    ) -> int:
         activity_date = before if before else datetime.date.today()
+        before_date_daily_activity: models.FitbitDailyActivity = (
+            await self.db.scalars(
+                statement=select(models.FitbitDailyActivity)
+                .join(models.FitbitUser)
+                .join(models.User)
+                .where(
+                    and_(
+                        models.FitbitDailyActivity.date == activity_date,
+                        models.FitbitUser.oauth_userid == fitbit_userid,
+                        models.FitbitDailyActivity.type_id == type_id,
+                    )
+                )
+                .order_by(desc(models.FitbitDailyActivity.date))
+            )
+        ).first()
+
+        # If the goal wasn't met today, we're not in a streak. Return 0.
+        if not before_date_daily_activity or (
+            min_distance_km is not None
+            and before_date_daily_activity.sum_distance_km < min_distance_km
+        ):
+            return 0
+
+        if days_without_activies_break_streak:
+            return await self._calculate_streak_strict_mode(
+                fitbit_userid=fitbit_userid,
+                type_id=type_id,
+                up_to_date=activity_date,
+                min_distance_km=min_distance_km,
+            )
+
+        return await self._calculate_streak_lax_mode(
+            fitbit_userid=fitbit_userid,
+            type_id=type_id,
+            up_to_date=activity_date,
+            min_distance_km=min_distance_km,
+        )
+
+    async def _calculate_streak_strict_mode(
+        self,
+        fitbit_userid: str,
+        type_id: int,
+        up_to_date: datetime.date,
+        min_distance_km: float | None,
+    ):
         today_filters = []
         yesterday_filters = []
         yesterday_activity_alias = aliased(models.FitbitDailyActivity)
@@ -379,13 +425,16 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # The idea of this SQL query:
         # Example:
         # Our goal is 20km.
-        # We've logged the following activities, ascending cronological order:
-        #   Monday: 21km
-        #   Tuesday: no activity
-        #   Wednesday: 19km
-        #   Thursday: 22km
-        #   Friday: 25km
+        # We've logged the following activities, descending cronological order:
         #
+        # Friday: 25km
+        # Thursday: 22km
+        # Wednesday: no activity
+        # Tuesday: 21km
+        # Monday: 15km
+        # Sunday: no activity
+        # Saturday: 23km
+
         # Start with a query on the relevant daily activities.
         #  ("Relevant" means for the given user and activity type, and optionally
         #  with the given minimum distance_km.)
@@ -408,14 +457,14 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         statement = (
             select(models.FitbitDailyActivity)
             .join(models.FitbitUser)
-            .join(models.User)
             # Supposing we're currently Friday.
             #
             # At this point, we have rows for (descending cronological order):
-            #   Friday: 25km    <--- met goal, in current streak
-            #   Thursday: 22km  <--- met goal, in current streak
-            #   Wednesday: 19km <--- didn't meet goal
-            #   Monday: 21km    <--- met goal, in previous streak
+            #   Friday: 25km   <--- met goal, in current streak
+            #   Thursday: 22km <--- met goal, in current streak
+            #   Tuesday: 21km  <--- met goal
+            #   Monday: 15km   <--- didn't meet goal
+            #   Saturday: 23km <--- met goal
             .outerjoin(
                 yesterday_activity_alias,
                 and_(
@@ -432,12 +481,13 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             #   "Today"             "Yesterday"
             #   -----------------   ---------------------------------------
             #   Friday: 25km        Thursday: 22km
-            #   Thursday: 22km      (null - yesterday wasn't at least 20km)
-            #   Wednesday: 19km     (null - no activity on Tuesday)
-            #   Monday: 21km        (null - no activity on Sunday)
+            #   Thursday: 22km      (null - no activity on Wednesday)
+            #   Tuesday: 21km       (null - Monday wasn't at least 20km)
+            #   Monday: 15km        (null - no activity on Sunday)
+            #   Saturday: 23km      (null - no activity before)
             .where(
                 and_(
-                    models.FitbitDailyActivity.date <= activity_date,
+                    models.FitbitDailyActivity.date <= up_to_date,
                     models.FitbitUser.oauth_userid == fitbit_userid,
                     models.FitbitDailyActivity.type_id == type_id,
                     yesterday_activity_alias.date
@@ -445,14 +495,15 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                     *today_filters,
                 )
                 # At this point, we eliminate some rows:
-                #   Wednesday: was < 20km.
                 #   Friday: it has a non-null value for "Yesterday"
+                #   Monday: was < 20km.
                 #
                 # We now have rows for (descending cronological order):
                 #   "Today"             "Yesterday"
                 #   -----------------   ---------------------------------------
-                #   Thursday: 22km      (null - yesterday wasn't at least 20km)
-                #   Monday: 21km        (null - no activity on Sunday)
+                #   Thursday: 22km      (null - no activity on Wednesday)
+                #   Tuesday: 21km       (null - Monday wasn't at least 20km)
+                #   Saturday: 23km      (null - no activity before)
             )
             .order_by(desc(models.FitbitDailyActivity.date))
         )
@@ -462,25 +513,142 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # We now take the first row:
         #   "Today"             "Yesterday"
         #   -----------------   ---------------------------------------
-        #   Thursday: 22km      (null - yesterday wasn't at least 20km)
+        #   Thursday: 22km      (null - no activity on Wednesday)
         #
         # The first day in our streak is Thursday.
         if not daily_activity:
-            return None
-        return DailyActivityStats(
-            date=daily_activity.date,
-            fitbit_userid=daily_activity.fitbit_user.oauth_userid,
-            slack_alias=daily_activity.fitbit_user.user.slack_alias,
-            type_id=daily_activity.type_id,
-            count_activities=daily_activity.count_activities,
-            sum_calories=daily_activity.sum_calories,
-            sum_distance_km=daily_activity.sum_distance_km,
-            sum_total_minutes=daily_activity.sum_total_minutes,
-            sum_fat_burn_minutes=daily_activity.sum_fat_burn_minutes,
-            sum_cardio_minutes=daily_activity.sum_cardio_minutes,
-            sum_peak_minutes=daily_activity.sum_peak_minutes,
-            sum_out_of_zone_minutes=daily_activity.sum_out_of_zone_minutes,
+            return 0
+        return (up_to_date - daily_activity.date).days + 1
+
+    async def _calculate_streak_lax_mode(
+        self,
+        fitbit_userid: str,
+        type_id: int,
+        up_to_date: datetime.date,
+        min_distance_km: float | None,
+    ):
+        # The idea of this SQL query:
+        # Example:
+        # Our goal is 20km.
+        # We've logged the following activities, descending cronological order:
+        #
+        # Friday: 25km            (in current streak)
+        # Thursday: 22km          (in current streak)
+        # Wednesday: no activity
+        # Tuesday: 21km           (in current streak)
+        # Monday: 15km            (broke the previous streak)
+        # Sunday: no activity
+        # Saturday: 23km
+
+        daily_activities_for_this_user_cte = (
+            select(
+                func.row_number()
+                .over(order_by=models.FitbitDailyActivity.date.desc())
+                .label("row_num"),
+                models.FitbitDailyActivity.date,
+                models.FitbitDailyActivity.sum_distance_km,
+            )
+            .join(models.FitbitUser)
+            .where(
+                and_(
+                    models.FitbitDailyActivity.date <= up_to_date,
+                    models.FitbitUser.oauth_userid == fitbit_userid,
+                    models.FitbitDailyActivity.type_id == type_id,
+                )
+            )
+            .order_by(desc(models.FitbitDailyActivity.date))
+            .cte("daily_activities_for_this_user_cte")
         )
+
+        # At this point, we have selected data like this:
+        # row_num   date      sum_distance_km
+        # --------  --------- ---------------
+        # 1         Friday    25km
+        # 2         Thursday  22km
+        # 3         Tuesday   21km
+        # 4         Monday    15km
+        # 5         Saturday  23km
+
+        today_activity_alias = aliased(
+            daily_activities_for_this_user_cte, alias="today_activity"
+        )
+        previous_day_activity_alias = aliased(
+            daily_activities_for_this_user_cte, alias="previous_day_activity"
+        )
+
+        today_and_previous_day_activities_cte = (
+            select(
+                today_activity_alias.c.row_num.label("today_row_num"),
+                today_activity_alias.c.date.label("today_date"),
+                today_activity_alias.c.sum_distance_km.label("today_distance_km"),
+                previous_day_activity_alias.c.row_num.label("previous_day_row_num"),
+                previous_day_activity_alias.c.date.label("previous_day_date"),
+                previous_day_activity_alias.c.sum_distance_km.label(
+                    "previous_day_distance_km"
+                ),
+            ).outerjoin_from(
+                today_activity_alias,
+                previous_day_activity_alias,
+                and_(
+                    today_activity_alias.c.row_num
+                    == previous_day_activity_alias.c.row_num - 1
+                ),
+            )
+        ).cte("today_and_previous_day_activities_cte")
+
+        # At this point, we have selected data like this:
+        #
+        # today_row_num   today_date  today_distance_km  previous_day_row_num  previous_day_date  previous_day_distance_km
+        # -------------   ----------  -----------------  --------------------  -----------------  ------------------------
+        # 1               Friday      25km               2                     Thursday           22km
+        # 2               Thursday    22km               3                     Tuesday            21km
+        # 3               Tuesday     21km               4                     Monday             15km
+        # 4               Monday      15km               5                     Saturday           23km
+        # 5               Saturday    23km               null                  null               null
+
+        today_filters = []
+        previous_day_filters = []
+        if min_distance_km is not None:
+            today_filters.append(
+                today_and_previous_day_activities_cte.c.today_distance_km
+                >= min_distance_km
+            )
+            previous_day_filters.append(
+                today_and_previous_day_activities_cte.c.previous_day_distance_km
+                < min_distance_km
+            )
+        streak_count_query = select(
+            today_and_previous_day_activities_cte.c.today_row_num
+        ).where(
+            and_(
+                *today_filters,
+                or_(
+                    today_and_previous_day_activities_cte.c.previous_day_distance_km
+                    == None,  # noqa E711 (sqlalchemy needs this)
+                    *previous_day_filters,
+                ),
+            )
+        )
+
+        # At this point, we have selected data like this:
+        #
+        # today_row_num
+        # -------------
+        # 3 (because the previous day was only 15km)
+        # 5 (because the previous day was null)
+
+        streak_count = (await self.db.scalars(statement=streak_count_query)).first()
+
+        # With the limit 1, the answer is 3. We have a streak of 3.
+        # For info, these 3 days include:
+        #
+        # Friday: 25km
+        # Thursday: 22km
+        # Tuesday: 21km
+
+        if not streak_count:
+            return 0
+        return streak_count
 
     async def get_daily_activities_by_type(
         self,

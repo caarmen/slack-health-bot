@@ -66,7 +66,7 @@ fitbit:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 2 day streak! 👏""",
     ),
     DailyActivityScenario(
-        id="distance only, met goal today (not yesterday)",
+        id="distance only, met goal today, not yesterday, met goal prior date, strict streak",
         custom_conf="""
 fitbit:
   activities:
@@ -83,6 +83,64 @@ fitbit:
 """,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 1 day streak! 👏""",
+    ),
+    DailyActivityScenario(
+        id="distance only, met goal today, not yesterday, met goal prior date, lax streak",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: false
+          fields:
+            - distance
+          daily_goals:
+            distance_km: 12
+          streak_mode: lax
+""",
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 1 day streak! 👏""",
+    ),
+    DailyActivityScenario(
+        id="distance only, met goal today, yesterday, and goal prior date, lax streak",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: false
+          fields:
+            - distance
+          daily_goals:
+            distance_km: 2
+          streak_mode: lax
+""",
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 3 day streak! 👏""",
+    ),
+    DailyActivityScenario(
+        id="no goal, lax streak",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: false
+          fields:
+            - distance
+          streak_mode: lax
+""",
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 4 day streak! 👏""",
     ),
     DailyActivityScenario(
         id="distance only, didn't meet goal",
@@ -166,12 +224,23 @@ async def test_process_daily_activities(  # noqa: PLR0913
                 secret_settings=SecretSettings(),
             )
     user_factory, _, fitbit_activity_factory = fitbit_factories
+    oldest_date = dt.datetime(2023, 2, 3, 10, 43, 32)
     old_date = dt.datetime(2023, 3, 4, 15, 44, 33)
     today = dt.datetime(2024, 8, 2, 10, 44, 55)
     yesterday = dt.datetime(2024, 8, 1, 10, 40, 3)
     activity_type = 90019
     user: models.User = user_factory.create(slack_alias="jdoe")
 
+    # Activity with very low stats, in the oldest date:
+    # - 10 calories
+    # - 0.1 km
+    fitbit_activity_factory.create(
+        fitbit_user_id=user.fitbit.id,
+        type_id=activity_type,
+        calories=10,
+        distance_km=0.1,
+        updated_at=oldest_date,
+    )
     # All-time top stats in the old date:
     # - 300 calories
     # - 20 km

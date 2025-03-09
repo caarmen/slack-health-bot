@@ -55,11 +55,17 @@ class Goals(BaseModel):
     distance_km: float | None = None
 
 
+class StreakMode(enum.StrEnum):
+    strict = enum.auto()
+    lax = enum.auto()
+
+
 class Report(BaseModel):
     daily: bool
     realtime: bool
     fields: Optional[list[ReportField]] = None
     daily_goals: Goals | None = None
+    streak_mode: StreakMode = StreakMode.strict
 
 
 class ActivityType(BaseModel):
