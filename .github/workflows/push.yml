@@ -1,0 +1,29 @@
+name: Create and archive a distribution
+
+on: [pull_request]
+
+jobs:
+  build-pex:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements/prod.txt --upgrade pip
+          pip install pyinstaller==5.10.1
+      - name: Package with pyinstaller
+        run: |
+          pyinstaller --onefile withingsslack/main.py
+      - name: Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: main
+          path: dist/main
+
+
