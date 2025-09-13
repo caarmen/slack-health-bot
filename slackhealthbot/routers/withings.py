@@ -10,9 +10,6 @@ from slackhealthbot.core.exceptions import UnknownUserException, UserLoggedOutEx
 from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
 )
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
-)
 from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
     RemoteWithingsRepository,
 )
@@ -28,7 +25,6 @@ from slackhealthbot.oauth.config import oauth
 from slackhealthbot.routers.dependencies import (
     get_local_withings_repository,
     get_remote_withings_repository,
-    get_slack_repository,
     templates,
 )
 from slackhealthbot.settings import Settings
@@ -106,7 +102,6 @@ async def withings_notification_webhook(
     withings_remote_repo: RemoteWithingsRepository = Depends(
         get_remote_withings_repository
     ),
-    slack_repo: RemoteSlackRepository = Depends(get_slack_repository),
 ):
     logging.info(
         "withings_notification_webhook: "
@@ -123,7 +118,6 @@ async def withings_notification_webhook(
                 await usecase_process_new_weight.do(
                     local_withings_repo=withings_local_repo,
                     remote_withings_repo=withings_remote_repo,
-                    slack_repo=slack_repo,
                     new_weight_parameters=NewWeightParameters(
                         withings_userid=notification.userid,
                         startdate=notification.startdate,
@@ -137,7 +131,6 @@ async def withings_notification_webhook(
             except UserLoggedOutException:
                 await usecase_post_user_logged_out.do(
                     withings_repo=withings_local_repo,
-                    slack_repo=slack_repo,
                     withings_userid=notification.userid,
                 )
             except UnknownUserException:

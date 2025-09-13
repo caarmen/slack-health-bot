@@ -21,9 +21,6 @@ from slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth import (
     UpdateTokenUseCase,
 )
 from slackhealthbot.oauth import fitbitconfig
-from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
-    WebhookSlackRepository,
-)
 from slackhealthbot.routers.dependencies import (
     fitbit_repository_factory,
     request_context_fitbit_repository,
@@ -98,7 +95,6 @@ async def test_fitbit_poll_sleep(  # noqa: PLR0913
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
             remote_fitbit_repo=remote_fitbit_repository,
-            slack_repo=WebhookSlackRepository(),
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )
@@ -193,7 +189,6 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
             remote_fitbit_repo=remote_fitbit_repository,
-            slack_repo=WebhookSlackRepository(),
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )
@@ -273,7 +268,6 @@ async def test_schedule_fitbit_poll(  # noqa: PLR0913
         initial_delay_s=0,
         local_fitbit_repo_factory=fitbit_repository_factory(mocked_async_session),
         remote_fitbit_repo=remote_fitbit_repository,
-        slack_repo=WebhookSlackRepository(),
     )
     await asyncio.sleep(1)
     # Then the last sleep data is updated in the database

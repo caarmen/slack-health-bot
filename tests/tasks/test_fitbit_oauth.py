@@ -17,9 +17,6 @@ from slackhealthbot.domain.models.activity import ActivityData
 from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
-from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
-    WebhookSlackRepository,
-)
 from slackhealthbot.routers.dependencies import fitbit_repository_factory
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks.fitbitpoll import Cache, do_poll
@@ -106,7 +103,6 @@ async def test_refresh_token_ok(  # noqa: PLR0913
             await do_poll(
                 local_fitbit_repo=repo,
                 remote_fitbit_repo=remote_fitbit_repository,
-                slack_repo=WebhookSlackRepository(),
                 cache=Cache(),
                 when=datetime.date(2023, 1, 23),
             )
@@ -205,7 +201,6 @@ async def test_refresh_token_fail(  # noqa: PLR0913
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
             remote_fitbit_repo=remote_fitbit_repository,
-            slack_repo=WebhookSlackRepository(),
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )
@@ -319,7 +314,6 @@ async def test_logged_out(  # noqa: PLR0913
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
             remote_fitbit_repo=remote_fitbit_repository,
-            slack_repo=WebhookSlackRepository(),
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )

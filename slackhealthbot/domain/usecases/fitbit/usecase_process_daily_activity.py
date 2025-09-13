@@ -13,9 +13,6 @@ from slackhealthbot.domain.models.activity import (
     DailyActivityStats,
     TopActivityStats,
 )
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
-)
 from slackhealthbot.domain.usecases.fitbit import usecase_calculate_streak
 from slackhealthbot.domain.usecases.slack import usecase_post_daily_activity
 from slackhealthbot.settings import Settings
@@ -31,7 +28,6 @@ activity_names = {
 @inject
 async def do(
     local_fitbit_repo: LocalFitbitRepository,
-    slack_repo: RemoteSlackRepository,
     daily_activity: DailyActivityStats,
     settings: Settings = Depends(Provide[Container.settings]),
 ):
@@ -79,7 +75,6 @@ async def do(
     )
 
     await usecase_post_daily_activity.do(
-        repo=slack_repo,
         slack_alias=user_identity.slack_alias,
         activity_name=activity_names.get(daily_activity.type_id, "Unknown"),
         history=history,

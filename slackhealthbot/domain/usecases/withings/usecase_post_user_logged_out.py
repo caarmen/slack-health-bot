@@ -2,9 +2,6 @@ from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
     UserIdentity,
 )
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
-)
 from slackhealthbot.domain.usecases.slack import (
     usecase_post_user_logged_out as slack_usecase_post_user_logged_out,
 )
@@ -12,7 +9,6 @@ from slackhealthbot.domain.usecases.slack import (
 
 async def do(
     withings_repo: LocalWithingsRepository,
-    slack_repo: RemoteSlackRepository,
     withings_userid: str,
 ):
     user_identity: UserIdentity = (
@@ -21,7 +17,6 @@ async def do(
         )
     )
     await slack_usecase_post_user_logged_out.do(
-        repo=slack_repo,
         slack_alias=user_identity.slack_alias,
         service="withings",
     )

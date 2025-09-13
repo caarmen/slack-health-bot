@@ -22,9 +22,6 @@ from slackhealthbot.domain.localrepository.localwithingsrepository import (
 from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
-)
 from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
     RemoteWithingsRepository,
 )
@@ -33,9 +30,6 @@ from slackhealthbot.remoteservices.repositories.webapifitbitrepository import (
 )
 from slackhealthbot.remoteservices.repositories.webapiwithingsrepository import (
     WebApiWithingsRepository,
-)
-from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
-    WebhookSlackRepository,
 )
 
 _ctx_db = ContextVar("ctx_db")
@@ -85,10 +79,6 @@ async def get_local_fitbit_repository(
 
 def get_remote_fitbit_repository() -> RemoteFitbitRepository:
     return WebApiFitbitRepository()
-
-
-def get_slack_repository() -> RemoteSlackRepository:
-    return WebhookSlackRepository()
 
 
 def request_context_fitbit_repository() -> LocalFitbitRepository:

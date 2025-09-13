@@ -15,12 +15,13 @@ from slackhealthbot.domain.usecases.slack.usecase_activity_message_formatter imp
 from slackhealthbot.settings import ReportField, Settings
 
 
+@inject
 async def do(
-    repo: RemoteSlackRepository,
     slack_alias: str,
     activity_name: str,
     history: DailyActivityHistory,
     record_history_days: int,
+    slack_repo: RemoteSlackRepository = Depends(Provide[Container.slack_repository]),
 ):
     message = create_message(
         slack_alias=slack_alias,
@@ -28,7 +29,7 @@ async def do(
         history=history,
         record_history_days=record_history_days,
     )
-    await repo.post_message(message.strip())
+    await slack_repo.post_message(message.strip())
 
 
 @inject

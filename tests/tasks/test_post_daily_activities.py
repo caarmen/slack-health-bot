@@ -7,9 +7,6 @@ from httpx import Response
 from respx import MockRouter
 
 from slackhealthbot.data.database import models
-from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
-    WebhookSlackRepository,
-)
 from slackhealthbot.routers.dependencies import fitbit_repository_factory
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks.post_daily_activities_task import dt as dt_to_freeze
@@ -119,7 +116,6 @@ async def test_post_daily_activities(
         activity_type_ids=set(
             settings.app_settings.fitbit.activities.daily_activity_type_ids
         ),
-        slack_repo=WebhookSlackRepository(),
         post_time=settings.app_settings.fitbit.activities.daily_report_time,
     )
 

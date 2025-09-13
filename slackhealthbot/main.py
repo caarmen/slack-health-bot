@@ -23,7 +23,6 @@ from slackhealthbot.routers.dependencies import (
     fitbit_repository_factory,
     get_remote_fitbit_repository,
     get_remote_withings_repository,
-    get_slack_repository,
     request_context_fitbit_repository,
     request_context_withings_repository,
 )
@@ -55,7 +54,6 @@ async def lifespan(_app: FastAPI):
         schedule_task = await fitbitpoll.schedule_fitbit_poll(
             local_fitbit_repo_factory=fitbit_repository_factory(),
             remote_fitbit_repo=get_remote_fitbit_repository(),
-            slack_repo=get_slack_repository(),
             initial_delay_s=10,
         )
     daily_activity_task: Task | None = None
@@ -66,7 +64,6 @@ async def lifespan(_app: FastAPI):
         daily_activity_task = await post_daily_activities(
             local_fitbit_repo_factory=fitbit_repository_factory(),
             activity_type_ids=set(daily_activity_type_ids),
-            slack_repo=get_slack_repository(),
             post_time=settings.app_settings.fitbit.activities.daily_report_time,
         )
     yield

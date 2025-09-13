@@ -16,9 +16,6 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
 )
 from slackhealthbot.domain.usecases.fitbit import usecase_process_daily_activities
 from slackhealthbot.main import app
-from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
-    WebhookSlackRepository,
-)
 from slackhealthbot.settings import AppSettings, SecretSettings, Settings
 from tests.testsupport.factories.factories import (
     FitbitActivityFactory,
@@ -346,7 +343,6 @@ async def test_process_daily_activities(  # noqa: PLR0913
             await usecase_process_daily_activities.do(
                 local_fitbit_repo=local_fitbit_repository,
                 type_ids={activity_type},
-                slack_repo=WebhookSlackRepository(),
             )
 
     assert slack_request.call_count == 1

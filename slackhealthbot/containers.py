@@ -1,5 +1,11 @@
 from dependency_injector import containers, providers
 
+from slackhealthbot.domain.remoterepository.remoteslackrepository import (
+    RemoteSlackRepository,
+)
+from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
+    WebhookSlackRepository,
+)
 from slackhealthbot.settings import AppSettings, SecretSettings, Settings
 
 
@@ -14,12 +20,13 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.domain.usecases.slack.usecase_post_user_logged_out",
             "slackhealthbot.domain.usecases.slack.usecase_post_activity",
             "slackhealthbot.domain.usecases.slack.usecase_post_daily_activity",
+            "slackhealthbot.domain.usecases.slack.usecase_post_sleep",
+            "slackhealthbot.domain.usecases.slack.usecase_post_weight",
             "slackhealthbot.oauth.fitbitconfig",
             "slackhealthbot.oauth.withingsconfig",
             "slackhealthbot.remoteservices.api.fitbit.activityapi",
             "slackhealthbot.remoteservices.api.fitbit.sleepapi",
             "slackhealthbot.remoteservices.api.fitbit.subscribeapi",
-            "slackhealthbot.remoteservices.api.slack.messageapi",
             "slackhealthbot.remoteservices.api.withings.subscribeapi",
             "slackhealthbot.remoteservices.api.withings.weightapi",
             "slackhealthbot.routers.fitbit",
@@ -35,4 +42,8 @@ class Container(containers.DeclarativeContainer):
         Settings,
         app_settings,
         secret_settings,
+    )
+    slack_repository: RemoteSlackRepository = providers.Factory(
+        WebhookSlackRepository,
+        settings,
     )

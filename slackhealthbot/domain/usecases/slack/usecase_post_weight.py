@@ -1,19 +1,24 @@
+from dependency_injector.wiring import Provide, inject
+from fastapi import Depends
+
+from slackhealthbot.containers import Container
 from slackhealthbot.domain.models.weight import WeightData
 from slackhealthbot.domain.remoterepository.remoteslackrepository import (
     RemoteSlackRepository,
 )
 
 
+@inject
 async def do(
-    repo: RemoteSlackRepository,
     weight_data: WeightData,
+    slack_repo: RemoteSlackRepository = Depends(Provide[Container.slack_repository]),
 ):
     icon = _get_weight_change_icon(weight_data)
     message = (
         f"New weight from <@{weight_data.slack_alias}>: "
         + f"{weight_data.weight_kg:.2f} kg. {icon}"
     )
-    await repo.post_message(message)
+    await slack_repo.post_message(message)
 
 
 WEIGHT_CHANGE_KG_SMALL = 0.1
