@@ -5,9 +5,6 @@ from slackhealthbot.domain.localrepository.localwithingsrepository import (
     User,
 )
 from slackhealthbot.domain.models.weight import WeightData
-from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
-    RemoteWithingsRepository,
-)
 from slackhealthbot.domain.usecases.slack import usecase_post_weight
 from slackhealthbot.domain.usecases.withings import usecase_get_last_weight
 
@@ -21,7 +18,6 @@ class NewWeightParameters:
 
 async def do(
     local_withings_repo: LocalWithingsRepository,
-    remote_withings_repo: RemoteWithingsRepository,
     new_weight_parameters: NewWeightParameters,
 ):
     user: User = await local_withings_repo.get_user_by_withings_userid(
@@ -31,7 +27,6 @@ async def do(
 
     new_weight_kg: float = await usecase_get_last_weight.do(
         local_repo=local_withings_repo,
-        remote_repo=remote_withings_repo,
         withings_userid=new_weight_parameters.withings_userid,
         startdate=new_weight_parameters.startdate,
         enddate=new_weight_parameters.enddate,

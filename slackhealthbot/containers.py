@@ -3,6 +3,12 @@ from dependency_injector import containers, providers
 from slackhealthbot.domain.remoterepository.remoteslackrepository import (
     RemoteSlackRepository,
 )
+from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
+    RemoteWithingsRepository,
+)
+from slackhealthbot.remoteservices.repositories.webapiwithingsrepository import (
+    WebApiWithingsRepository,
+)
 from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
     WebhookSlackRepository,
 )
@@ -17,6 +23,9 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.domain.usecases.fitbit.usecase_process_daily_activity",
             "slackhealthbot.domain.usecases.fitbit.usecase_process_new_activity",
             "slackhealthbot.domain.usecases.fitbit.usecase_calculate_streak",
+            "slackhealthbot.domain.usecases.withings.usecase_get_last_weight",
+            "slackhealthbot.domain.usecases.withings.usecase_login_user",
+            "slackhealthbot.domain.usecases.withings.usecase_update_user_oauth",
             "slackhealthbot.domain.usecases.slack.usecase_post_user_logged_out",
             "slackhealthbot.domain.usecases.slack.usecase_post_activity",
             "slackhealthbot.domain.usecases.slack.usecase_post_daily_activity",
@@ -27,8 +36,6 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.remoteservices.api.fitbit.activityapi",
             "slackhealthbot.remoteservices.api.fitbit.sleepapi",
             "slackhealthbot.remoteservices.api.fitbit.subscribeapi",
-            "slackhealthbot.remoteservices.api.withings.subscribeapi",
-            "slackhealthbot.remoteservices.api.withings.weightapi",
             "slackhealthbot.routers.fitbit",
             "slackhealthbot.routers.withings",
             "slackhealthbot.tasks.fitbitpoll",
@@ -45,5 +52,9 @@ class Container(containers.DeclarativeContainer):
     )
     slack_repository: RemoteSlackRepository = providers.Factory(
         WebhookSlackRepository,
+        settings,
+    )
+    remote_withings_repository: RemoteWithingsRepository = providers.Factory(
+        WebApiWithingsRepository,
         settings,
     )

@@ -1,5 +1,8 @@
 from typing import Any
 
+from dependency_injector.wiring import Provide, inject
+
+from slackhealthbot.containers import Container
 from slackhealthbot.core.models import OAuthFields
 from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
@@ -11,11 +14,14 @@ from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
 )
 
 
+@inject
 async def do(
     local_repo: LocalWithingsRepository,
-    remote_repo: RemoteWithingsRepository,
     slack_alias: str,
     token: dict[str, Any],
+    remote_repo: RemoteWithingsRepository = Provide[
+        Container.remote_withings_repository
+    ],
 ):
     user: User = await _upsert_user(local_repo, remote_repo, slack_alias, token)
     await remote_repo.subscribe(user.oauth_data)

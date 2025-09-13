@@ -22,7 +22,6 @@ from slackhealthbot.oauth import withingsconfig as oauth_withings
 from slackhealthbot.routers.dependencies import (
     fitbit_repository_factory,
     get_remote_fitbit_repository,
-    get_remote_withings_repository,
     request_context_fitbit_repository,
     request_context_withings_repository,
 )
@@ -40,7 +39,6 @@ async def lifespan(_app: FastAPI):
     oauth_withings.configure(
         WithingsUpdateTokenUseCase(
             request_context_withings_repository,
-            remote_repo=get_remote_withings_repository(),
         )
     )
     oauth_fitbit.configure(

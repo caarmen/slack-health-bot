@@ -10,9 +10,6 @@ from slackhealthbot.core.exceptions import UnknownUserException, UserLoggedOutEx
 from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
 )
-from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
-    RemoteWithingsRepository,
-)
 from slackhealthbot.domain.usecases.withings import (
     usecase_login_user,
     usecase_post_user_logged_out,
@@ -24,7 +21,6 @@ from slackhealthbot.domain.usecases.withings.usecase_process_new_weight import (
 from slackhealthbot.oauth.config import oauth
 from slackhealthbot.routers.dependencies import (
     get_local_withings_repository,
-    get_remote_withings_repository,
     templates,
 )
 from slackhealthbot.settings import Settings
@@ -47,7 +43,6 @@ def validate_withings_notification_webhook():
 async def withings_oauth_webhook(
     request: Request,
     local_repo: LocalWithingsRepository = Depends(get_local_withings_repository),
-    remote_repo: RemoteWithingsRepository = Depends(get_remote_withings_repository),
     settings: Settings = Depends(Provide[Container.settings]),
 ):
     token: dict = await oauth.create_client(
@@ -55,7 +50,6 @@ async def withings_oauth_webhook(
     ).authorize_access_token(request)
     await usecase_login_user.do(
         local_repo=local_repo,
-        remote_repo=remote_repo,
         token=token,
         slack_alias=request.session.pop("slack_alias"),
     )
@@ -99,9 +93,6 @@ async def withings_notification_webhook(
     withings_local_repo: LocalWithingsRepository = Depends(
         get_local_withings_repository
     ),
-    withings_remote_repo: RemoteWithingsRepository = Depends(
-        get_remote_withings_repository
-    ),
 ):
     logging.info(
         "withings_notification_webhook: "
@@ -117,7 +108,6 @@ async def withings_notification_webhook(
             try:
                 await usecase_process_new_weight.do(
                     local_withings_repo=withings_local_repo,
-                    remote_withings_repo=withings_remote_repo,
                     new_weight_parameters=NewWeightParameters(
                         withings_userid=notification.userid,
                         startdate=notification.startdate,

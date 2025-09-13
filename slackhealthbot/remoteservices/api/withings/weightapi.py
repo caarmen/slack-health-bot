@@ -1,19 +1,15 @@
 from typing import Optional
 
-from dependency_injector.wiring import Provide, inject
-
-from slackhealthbot.containers import Container
 from slackhealthbot.core.models import OAuthFields
 from slackhealthbot.oauth import requests
 from slackhealthbot.settings import Settings
 
 
-@inject
 async def get_last_weight_kg(
     oauth_token: OAuthFields,
     startdate: int,
     enddate: int,
-    settings: Settings = Provide[Container.settings],
+    settings: Settings,
 ) -> Optional[float]:
     """
     :raises:

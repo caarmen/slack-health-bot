@@ -1,3 +1,6 @@
+from dependency_injector.wiring import Provide, inject
+
+from slackhealthbot.containers import Container
 from slackhealthbot.core.models import OAuthFields
 from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
@@ -7,12 +10,15 @@ from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
 )
 
 
+@inject
 async def do(
     local_repo: LocalWithingsRepository,
-    remote_repo: RemoteWithingsRepository,
     withings_userid: str,
     startdate: int,
     enddate: int,
+    remote_repo: RemoteWithingsRepository = Provide[
+        Container.remote_withings_repository
+    ],
 ) -> float:
     oauth_fields: OAuthFields = await local_repo.get_oauth_data_by_withings_userid(
         withings_userid=withings_userid,
