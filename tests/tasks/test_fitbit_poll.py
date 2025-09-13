@@ -14,9 +14,6 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
 from slackhealthbot.domain.models.activity import ActivityData
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
 from slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth import (
     UpdateTokenUseCase,
 )
@@ -48,7 +45,7 @@ from tests.testsupport.testdata.fitbit_scenarios import (
 )
 @pytest.mark.asyncio
 async def test_fitbit_poll_sleep(  # noqa: PLR0913
-    fitbit_repositories: tuple[LocalFitbitRepository, RemoteFitbitRepository],
+    local_fitbit_repository: LocalFitbitRepository,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
     scenario: FitbitSleepScenario,
@@ -61,7 +58,6 @@ async def test_fitbit_poll_sleep(  # noqa: PLR0913
     Then the last sleep is updated in the database,
     And the message is posted to slack with the correct icon.
     """
-    local_fitbit_repository, remote_fitbit_repository = fitbit_repositories
     user_factory, fitbit_user_factory, _ = fitbit_factories
 
     # Given a user with the given previous sleep data
@@ -94,7 +90,6 @@ async def test_fitbit_poll_sleep(  # noqa: PLR0913
     with client:
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
-            remote_fitbit_repo=remote_fitbit_repository,
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )
@@ -122,7 +117,7 @@ async def test_fitbit_poll_sleep(  # noqa: PLR0913
 )
 @pytest.mark.asyncio
 async def test_fitbit_poll_activity(  # noqa PLR0913
-    fitbit_repositories: tuple[LocalFitbitRepository, RemoteFitbitRepository],
+    local_fitbit_repository: LocalFitbitRepository,
     respx_mock: MockRouter,
     monkeypatch: pytest.MonkeyPatch,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
@@ -137,7 +132,6 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
     And the message is posted to slack with the correct pattern.
     """
 
-    local_fitbit_repository, remote_fitbit_repository = fitbit_repositories
     user_factory, fitbit_user_factory, fitbit_activity_factory = fitbit_factories
     activity_type_id = 55001
 
@@ -188,7 +182,6 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
     with client:
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
-            remote_fitbit_repo=remote_fitbit_repository,
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )
@@ -220,7 +213,7 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
 @pytest.mark.asyncio
 async def test_schedule_fitbit_poll(  # noqa: PLR0913
     mocked_async_session,
-    fitbit_repositories: tuple[LocalFitbitRepository, RemoteFitbitRepository],
+    local_fitbit_repository: LocalFitbitRepository,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
     monkeypatch: pytest.MonkeyPatch,
@@ -233,7 +226,6 @@ async def test_schedule_fitbit_poll(  # noqa: PLR0913
         "No previous activity data, new Spinning activity"
     ]
 
-    local_fitbit_repository, remote_fitbit_repository = fitbit_repositories
     user_factory, fitbit_user_factory, _ = fitbit_factories
 
     user: User = user_factory.create(fitbit=None)
@@ -261,13 +253,11 @@ async def test_schedule_fitbit_poll(  # noqa: PLR0913
     fitbitconfig.configure(
         UpdateTokenUseCase(
             request_context_fitbit_repository,
-            remote_repo=remote_fitbit_repository,
         )
     )
     task = await fitbitpoll.schedule_fitbit_poll(
         initial_delay_s=0,
         local_fitbit_repo_factory=fitbit_repository_factory(mocked_async_session),
-        remote_fitbit_repo=remote_fitbit_repository,
     )
     await asyncio.sleep(1)
     # Then the last sleep data is updated in the database

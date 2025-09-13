@@ -12,9 +12,6 @@ from slackhealthbot.domain.models.activity import (
     ActivityHistory,
     TopActivityStats,
 )
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
 from slackhealthbot.domain.usecases.fitbit import usecase_get_last_activity
 from slackhealthbot.domain.usecases.slack import usecase_post_activity
 from slackhealthbot.settings import Settings
@@ -23,7 +20,6 @@ from slackhealthbot.settings import Settings
 @inject
 async def do(  # noqa: PLR0913 deal with this later
     local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
     fitbit_userid: str,
     when: datetime.datetime,
     settings: Settings = Provide[Container.settings],
@@ -35,7 +31,6 @@ async def do(  # noqa: PLR0913 deal with this later
     )
     new_activity = await usecase_get_last_activity.do(
         local_repo=local_fitbit_repo,
-        remote_repo=remote_fitbit_repo,
         fitbit_userid=fitbit_userid,
         when=when,
     )

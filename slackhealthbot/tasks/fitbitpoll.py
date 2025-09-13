@@ -12,9 +12,6 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
     UserIdentity,
 )
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
 from slackhealthbot.domain.usecases.fitbit import (
     usecase_process_new_activity,
     usecase_process_new_sleep,
@@ -58,14 +55,12 @@ async def handle_fail_poll(
 async def fitbit_poll(
     cache: Cache,
     local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
 ):
     logging.info("fitbit poll")
     today = datetime.date.today()
     try:
         await do_poll(
             local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
             cache=cache,
             when=today,
         )
@@ -75,7 +70,6 @@ async def fitbit_poll(
 
 async def do_poll(
     local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
     cache: Cache,
     when: datetime.date,
 ):
@@ -85,7 +79,6 @@ async def do_poll(
     for user_identity in user_identities:
         await fitbit_poll_sleep(
             local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
             cache=cache,
             poll_target=PollTarget(
                 when=when,
@@ -94,7 +87,6 @@ async def do_poll(
         )
         await fitbit_poll_activity(
             local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
             cache=cache,
             poll_target=PollTarget(
                 when=when,
@@ -111,14 +103,12 @@ class PollTarget:
 
 async def fitbit_poll_activity(
     local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
     cache: Cache,
     poll_target: PollTarget,
 ):
     try:
         await usecase_process_new_activity.do(
             local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
             fitbit_userid=poll_target.user_identity.fitbit_userid,
             when=datetime.datetime.now(),
         )
@@ -133,7 +123,6 @@ async def fitbit_poll_activity(
 
 async def fitbit_poll_sleep(
     local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
     cache: Cache,
     poll_target: PollTarget,
 ):
@@ -144,7 +133,6 @@ async def fitbit_poll_sleep(
         try:
             sleep_data = await usecase_process_new_sleep.do(
                 local_fitbit_repo=local_fitbit_repo,
-                remote_fitbit_repo=remote_fitbit_repo,
                 fitbit_userid=poll_target.user_identity.fitbit_userid,
                 when=poll_target.when,
             )
@@ -166,7 +154,6 @@ async def fitbit_poll_sleep(
 
 async def schedule_fitbit_poll(  # noqa: PLR0913 deal with it later
     local_fitbit_repo_factory: Callable[[], AsyncContextManager[LocalFitbitRepository]],
-    remote_fitbit_repo: RemoteFitbitRepository,
     initial_delay_s: int | None = None,
     cache: Cache = None,
     settings: Settings = Provide[Container.settings],
@@ -184,7 +171,6 @@ async def schedule_fitbit_poll(  # noqa: PLR0913 deal with it later
                 await fitbit_poll(
                     cache=cache,
                     local_fitbit_repo=local_fitbit_repo,
-                    remote_fitbit_repo=remote_fitbit_repo,
                 )
             await asyncio.sleep(settings.app_settings.fitbit.poll.interval_seconds)
 

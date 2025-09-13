@@ -11,9 +11,6 @@ from slackhealthbot.core.exceptions import UnknownUserException, UserLoggedOutEx
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
 from slackhealthbot.domain.usecases.fitbit import (
     usecase_login_user,
     usecase_post_user_logged_out,
@@ -23,7 +20,6 @@ from slackhealthbot.domain.usecases.fitbit import (
 from slackhealthbot.oauth.config import oauth
 from slackhealthbot.routers.dependencies import (
     get_local_fitbit_repository,
-    get_remote_fitbit_repository,
     templates,
 )
 from slackhealthbot.settings import Settings
@@ -62,7 +58,6 @@ def validate_fitbit_notification_webhook(
 async def fitbit_oauth_webhook(
     request: Request,
     local_repo: LocalFitbitRepository = Depends(get_local_fitbit_repository),
-    remote_repo: RemoteFitbitRepository = Depends(get_remote_fitbit_repository),
     settings: Settings = Depends(Provide[Container.settings]),
 ):
     token: dict = await oauth.create_client(
@@ -70,7 +65,6 @@ async def fitbit_oauth_webhook(
     ).authorize_access_token(request)
     await usecase_login_user.do(
         local_repo=local_repo,
-        remote_repo=remote_repo,
         token=token,
         slack_alias=request.session.pop("slack_alias"),
     )
@@ -117,7 +111,6 @@ def _mark_fitbit_notification_processed(notification: FitbitNotification):
 async def fitbit_notification_webhook(
     notifications: list[FitbitNotification],
     local_fitbit_repo: LocalFitbitRepository = Depends(get_local_fitbit_repository),
-    remote_fitbit_repo: RemoteFitbitRepository = Depends(get_remote_fitbit_repository),
 ):
     logging.info(f"fitbit_notification_webhook: {notifications}")
     for notification in notifications:
@@ -132,7 +125,6 @@ async def fitbit_notification_webhook(
                 if notification.collectionType == "sleep":
                     new_sleep_data = await usecase_process_new_sleep.do(
                         local_fitbit_repo=local_fitbit_repo,
-                        remote_fitbit_repo=remote_fitbit_repo,
                         fitbit_userid=notification.ownerId,
                         when=notification.date,
                     )
@@ -141,7 +133,6 @@ async def fitbit_notification_webhook(
                 elif notification.collectionType == "activities":
                     activity_history = await usecase_process_new_activity.do(
                         local_fitbit_repo=local_fitbit_repo,
-                        remote_fitbit_repo=remote_fitbit_repo,
                         fitbit_userid=notification.ownerId,
                         when=datetime.datetime.now(),
                     )

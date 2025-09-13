@@ -14,9 +14,6 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
 from slackhealthbot.domain.models.activity import ActivityData
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
 from slackhealthbot.routers.dependencies import fitbit_repository_factory
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks.fitbitpoll import Cache, do_poll
@@ -31,7 +28,6 @@ from tests.testsupport.testdata.fitbit_scenarios import activity_scenarios
 @pytest.mark.asyncio
 async def test_refresh_token_ok(  # noqa: PLR0913
     mocked_async_session: AsyncSession,
-    remote_fitbit_repository: RemoteFitbitRepository,
     client: TestClient,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
@@ -102,7 +98,6 @@ async def test_refresh_token_ok(  # noqa: PLR0913
         async with fitbit_repository_factory(mocked_async_session)() as repo:
             await do_poll(
                 local_fitbit_repo=repo,
-                remote_fitbit_repo=remote_fitbit_repository,
                 cache=Cache(),
                 when=datetime.date(2023, 1, 23),
             )
@@ -141,7 +136,6 @@ async def test_refresh_token_ok(  # noqa: PLR0913
 @pytest.mark.asyncio
 async def test_refresh_token_fail(  # noqa: PLR0913
     local_fitbit_repository: LocalFitbitRepository,
-    remote_fitbit_repository: RemoteFitbitRepository,
     client: TestClient,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
@@ -200,7 +194,6 @@ async def test_refresh_token_fail(  # noqa: PLR0913
     with client:
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
-            remote_fitbit_repo=remote_fitbit_repository,
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )
@@ -242,7 +235,6 @@ class LoginScenario(enum.Enum):
 @pytest.mark.asyncio
 async def test_logged_out(  # noqa: PLR0913
     local_fitbit_repository: LocalFitbitRepository,
-    remote_fitbit_repository: RemoteFitbitRepository,
     client: TestClient,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
@@ -313,7 +305,6 @@ async def test_logged_out(  # noqa: PLR0913
     with client:
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
-            remote_fitbit_repo=remote_fitbit_repository,
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )

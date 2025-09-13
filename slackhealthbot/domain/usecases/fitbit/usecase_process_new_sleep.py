@@ -5,16 +5,12 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     UserIdentity,
 )
 from slackhealthbot.domain.models.sleep import SleepData
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
 from slackhealthbot.domain.usecases.fitbit import usecase_get_last_sleep
 from slackhealthbot.domain.usecases.slack import usecase_post_sleep
 
 
 async def do(
     local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
     fitbit_userid: str,
     when: datetime.date,
 ) -> SleepData | None:
@@ -28,7 +24,6 @@ async def do(
     )
     new_sleep_data: SleepData = await usecase_get_last_sleep.do(
         local_repo=local_fitbit_repo,
-        remote_repo=remote_fitbit_repo,
         fitbit_userid=fitbit_userid,
         when=when,
     )

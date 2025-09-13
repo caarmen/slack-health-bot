@@ -1,10 +1,16 @@
 from dependency_injector import containers, providers
 
+from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
+    RemoteFitbitRepository,
+)
 from slackhealthbot.domain.remoterepository.remoteslackrepository import (
     RemoteSlackRepository,
 )
 from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
     RemoteWithingsRepository,
+)
+from slackhealthbot.remoteservices.repositories.webapifitbitrepository import (
+    WebApiFitbitRepository,
 )
 from slackhealthbot.remoteservices.repositories.webapiwithingsrepository import (
     WebApiWithingsRepository,
@@ -20,8 +26,12 @@ class Container(containers.DeclarativeContainer):
 
     wiring_config = containers.WiringConfiguration(
         modules=[
+            "slackhealthbot.domain.usecases.fitbit.usecase_get_last_activity",
+            "slackhealthbot.domain.usecases.fitbit.usecase_get_last_sleep",
+            "slackhealthbot.domain.usecases.fitbit.usecase_login_user",
             "slackhealthbot.domain.usecases.fitbit.usecase_process_daily_activity",
             "slackhealthbot.domain.usecases.fitbit.usecase_process_new_activity",
+            "slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth",
             "slackhealthbot.domain.usecases.fitbit.usecase_calculate_streak",
             "slackhealthbot.domain.usecases.withings.usecase_get_last_weight",
             "slackhealthbot.domain.usecases.withings.usecase_login_user",
@@ -33,9 +43,6 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.domain.usecases.slack.usecase_post_weight",
             "slackhealthbot.oauth.fitbitconfig",
             "slackhealthbot.oauth.withingsconfig",
-            "slackhealthbot.remoteservices.api.fitbit.activityapi",
-            "slackhealthbot.remoteservices.api.fitbit.sleepapi",
-            "slackhealthbot.remoteservices.api.fitbit.subscribeapi",
             "slackhealthbot.routers.fitbit",
             "slackhealthbot.routers.withings",
             "slackhealthbot.tasks.fitbitpoll",
@@ -52,6 +59,10 @@ class Container(containers.DeclarativeContainer):
     )
     slack_repository: RemoteSlackRepository = providers.Factory(
         WebhookSlackRepository,
+        settings,
+    )
+    remote_fitbit_repository: RemoteFitbitRepository = providers.Factory(
+        WebApiFitbitRepository,
         settings,
     )
     remote_withings_repository: RemoteWithingsRepository = providers.Factory(

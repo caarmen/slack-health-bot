@@ -3,10 +3,8 @@ import json
 import logging
 from typing import Self
 
-from dependency_injector.wiring import Provide, inject
 from pydantic import BaseModel
 
-from slackhealthbot.containers import Container
 from slackhealthbot.core.models import OAuthFields
 from slackhealthbot.oauth import requests
 from slackhealthbot.settings import Settings
@@ -42,11 +40,10 @@ class FitbitActivities(BaseModel):
         return cls(**json.loads(text))
 
 
-@inject
 async def get_activity(
     oauth_token: OAuthFields,
     when: datetime.datetime,
-    settings: Settings = Provide[Container.settings],
+    settings: Settings,
 ) -> FitbitActivities | None:
     """
     :raises:
