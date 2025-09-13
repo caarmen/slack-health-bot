@@ -10,18 +10,11 @@ from slackhealthbot.data.database.connection import create_async_session_maker
 from slackhealthbot.data.repositories.sqlalchemyfitbitrepository import (
     SQLAlchemyFitbitRepository,
 )
-from slackhealthbot.data.repositories.sqlalchemywithingsrepository import (
-    SQLAlchemyWithingsRepository,
-)
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
-from slackhealthbot.domain.localrepository.localwithingsrepository import (
-    LocalWithingsRepository,
-)
 
 _ctx_db = ContextVar("ctx_db")
-_ctx_withings_repository = ContextVar("withings_repository")
 _ctx_fitbit_repository = ContextVar("fitbit_repository")
 
 
@@ -37,19 +30,6 @@ async def get_db():
     finally:
         await db.close()
         _ctx_db.set(None)
-
-
-async def get_local_withings_repository(
-    db: AsyncSession = Depends(get_db),
-) -> LocalWithingsRepository:
-    repo = SQLAlchemyWithingsRepository(db=db)
-    _ctx_withings_repository.set(repo)
-    yield repo
-    _ctx_withings_repository.set(None)
-
-
-def request_context_withings_repository() -> LocalWithingsRepository:
-    return _ctx_withings_repository.get()
 
 
 async def get_local_fitbit_repository(

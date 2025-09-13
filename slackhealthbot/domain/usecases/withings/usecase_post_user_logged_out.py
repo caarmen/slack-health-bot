@@ -1,3 +1,6 @@
+from dependency_injector.wiring import Provide, inject
+
+from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
     UserIdentity,
@@ -7,9 +10,12 @@ from slackhealthbot.domain.usecases.slack import (
 )
 
 
+@inject
 async def do(
-    withings_repo: LocalWithingsRepository,
     withings_userid: str,
+    withings_repo: LocalWithingsRepository = Provide[
+        Container.local_withings_repository
+    ],
 ):
     user_identity: UserIdentity = (
         await withings_repo.get_user_identity_by_withings_userid(

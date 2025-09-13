@@ -11,6 +11,7 @@ from alembic import command
 from alembic.config import Config
 from slackhealthbot.data.database import connection as db_connection
 from slackhealthbot.data.database.models import Base
+from slackhealthbot.main import app
 
 
 @pytest.fixture
@@ -56,6 +57,7 @@ async def mocked_async_session(
     mocked_async_session_generator: AsyncGenerator[AsyncSession, None],
 ) -> AsyncGenerator[AsyncSession, None]:
     async for session in mocked_async_session_generator():
+        app.container.db.override(session)
         yield session
 
 

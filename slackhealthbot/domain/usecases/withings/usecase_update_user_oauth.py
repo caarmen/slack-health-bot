@@ -17,16 +17,21 @@ class UpdateTokenUseCase(Callable):
     @inject
     def __init__(
         self,
-        request_context_withings_repository: Callable[[], LocalWithingsRepository],
         remote_repo: RemoteWithingsRepository = Provide[
             Container.remote_withings_repository
         ],
     ):
-        self.request_context_withings_repository = request_context_withings_repository
         self.remote_repo = remote_repo
 
-    async def __call__(self, token: dict[str, Any], **kwargs):
-        local_repo: LocalWithingsRepository = self.request_context_withings_repository()
+    @inject
+    async def __call__(
+        self,
+        token: dict[str, Any],
+        local_repo: LocalWithingsRepository = Provide[
+            Container.local_withings_repository
+        ],
+        **kwargs,
+    ):
         oauth_fields: OAuthFields = self.remote_repo.parse_oauth_fields(token)
         await local_repo.update_oauth_data(
             withings_userid=oauth_fields.oauth_userid,

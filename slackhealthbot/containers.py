@@ -1,5 +1,16 @@
 from dependency_injector import containers, providers
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from slackhealthbot.data.database.connection import (
+    create_async_session_maker,
+    session_context_manager,
+)
+from slackhealthbot.data.repositories.sqlalchemywithingsrepository import (
+    SQLAlchemyWithingsRepository,
+)
+from slackhealthbot.domain.localrepository.localwithingsrepository import (
+    LocalWithingsRepository,
+)
 from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
@@ -35,7 +46,9 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.domain.usecases.fitbit.usecase_calculate_streak",
             "slackhealthbot.domain.usecases.withings.usecase_get_last_weight",
             "slackhealthbot.domain.usecases.withings.usecase_login_user",
+            "slackhealthbot.domain.usecases.withings.usecase_process_new_weight",
             "slackhealthbot.domain.usecases.withings.usecase_update_user_oauth",
+            "slackhealthbot.domain.usecases.withings.usecase_post_user_logged_out",
             "slackhealthbot.domain.usecases.slack.usecase_post_user_logged_out",
             "slackhealthbot.domain.usecases.slack.usecase_post_activity",
             "slackhealthbot.domain.usecases.slack.usecase_post_daily_activity",
@@ -45,6 +58,7 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.oauth.withingsconfig",
             "slackhealthbot.routers.fitbit",
             "slackhealthbot.routers.withings",
+            "slackhealthbot.routers.dependencies",
             "slackhealthbot.tasks.fitbitpoll",
             "slackhealthbot.data.database.connection",
         ],
@@ -68,4 +82,18 @@ class Container(containers.DeclarativeContainer):
     remote_withings_repository: RemoteWithingsRepository = providers.Factory(
         WebApiWithingsRepository,
         settings,
+    )
+    session_factory: async_sessionmaker = providers.Singleton(
+        create_async_session_maker,
+        settings,
+    )
+
+    db: AsyncSession = providers.Resource(
+        session_context_manager,
+        session_factory,
+    )
+
+    local_withings_repository: LocalWithingsRepository = providers.Factory(
+        SQLAlchemyWithingsRepository,
+        db,
     )

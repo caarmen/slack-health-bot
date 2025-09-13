@@ -1,5 +1,8 @@
 import dataclasses
 
+from dependency_injector.wiring import Provide, inject
+
+from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
     User,
@@ -16,9 +19,12 @@ class NewWeightParameters:
     enddate: int
 
 
+@inject
 async def do(
-    local_withings_repo: LocalWithingsRepository,
     new_weight_parameters: NewWeightParameters,
+    local_withings_repo: LocalWithingsRepository = Provide[
+        Container.local_withings_repository
+    ],
 ):
     user: User = await local_withings_repo.get_user_by_withings_userid(
         withings_userid=new_weight_parameters.withings_userid,

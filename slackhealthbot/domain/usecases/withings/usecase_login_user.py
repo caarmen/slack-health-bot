@@ -16,9 +16,9 @@ from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
 
 @inject
 async def do(
-    local_repo: LocalWithingsRepository,
     slack_alias: str,
     token: dict[str, Any],
+    local_repo: LocalWithingsRepository = Provide[Container.local_withings_repository],
     remote_repo: RemoteWithingsRepository = Provide[
         Container.remote_withings_repository
     ],
