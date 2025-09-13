@@ -5,7 +5,6 @@ import logging
 from typing import AsyncContextManager, Callable
 
 from dependency_injector.wiring import Provide
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.core.exceptions import UserLoggedOutException
@@ -170,7 +169,7 @@ async def schedule_fitbit_poll(  # noqa: PLR0913 deal with it later
     remote_fitbit_repo: RemoteFitbitRepository,
     initial_delay_s: int | None = None,
     cache: Cache = None,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     if cache is None:
         cache = Cache()

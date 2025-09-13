@@ -1,7 +1,6 @@
 import datetime
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
@@ -27,7 +26,7 @@ async def do(  # noqa: PLR0913 deal with this later
     remote_fitbit_repo: RemoteFitbitRepository,
     fitbit_userid: str,
     when: datetime.datetime,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ) -> ActivityData | None:
     user_identity: UserIdentity = (
         await local_fitbit_repo.get_user_identity_by_fitbit_userid(

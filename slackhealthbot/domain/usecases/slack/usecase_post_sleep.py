@@ -1,7 +1,6 @@
 import datetime
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.models.sleep import SleepData
@@ -15,7 +14,7 @@ async def do(
     slack_alias: str,
     new_sleep_data: SleepData,
     last_sleep_data: SleepData,
-    slack_repo: RemoteSlackRepository = Depends(Provide[Container.slack_repository]),
+    slack_repo: RemoteSlackRepository = Provide[Container.slack_repository],
 ):
     message = create_message(
         slack_alias=slack_alias,

@@ -4,7 +4,6 @@ import logging
 from typing import Self
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 from pydantic import BaseModel
 
 from slackhealthbot.containers import Container
@@ -47,7 +46,7 @@ class FitbitActivities(BaseModel):
 async def get_activity(
     oauth_token: OAuthFields,
     when: datetime.datetime,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ) -> FitbitActivities | None:
     """
     :raises:

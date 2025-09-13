@@ -1,7 +1,6 @@
 import logging
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.core.models import OAuthFields
@@ -12,7 +11,7 @@ from slackhealthbot.settings import Settings
 @inject
 async def subscribe(
     oauth_token: OAuthFields,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     for collectionPath in ["sleep", "activities"]:
         response = await requests.post(

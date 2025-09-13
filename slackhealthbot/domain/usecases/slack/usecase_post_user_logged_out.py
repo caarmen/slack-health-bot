@@ -1,5 +1,4 @@
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.remoterepository.remoteslackrepository import (
@@ -12,8 +11,8 @@ from slackhealthbot.settings import Settings
 async def do(
     slack_alias: str,
     service: str,
-    settings: Settings = Depends(Provide[Container.settings]),
-    slack_repo: RemoteSlackRepository = Depends(Provide[Container.slack_repository]),
+    settings: Settings = Provide[Container.settings],
+    slack_repo: RemoteSlackRepository = Provide[Container.slack_repository],
 ):
     message = f"""
 Oh no <@{slack_alias}>, looks like you were logged out of {service}! 😳.

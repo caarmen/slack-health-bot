@@ -3,7 +3,6 @@ from functools import cache
 from pathlib import Path
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -13,7 +12,7 @@ from slackhealthbot.settings import Settings
 
 @inject
 def get_connection_url(
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ) -> str:
     # In the case of running "alembic upgrade head", it accesses this
     # function without going through the dependency injection.
@@ -25,7 +24,7 @@ def get_connection_url(
 @cache
 @inject
 def create_async_session_maker(
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ) -> async_sessionmaker:
     engine = create_async_engine(
         get_connection_url(),

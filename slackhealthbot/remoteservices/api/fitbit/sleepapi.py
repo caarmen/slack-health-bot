@@ -4,7 +4,6 @@ import logging
 from typing import Annotated, Literal, Self, Union
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 from pydantic import BaseModel, Field
 
 from slackhealthbot.containers import Container
@@ -69,7 +68,7 @@ class FitbitSleep(BaseModel):
 async def get_sleep(
     oauth_token: OAuthFields,
     when: datetime.date,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ) -> FitbitSleep | None:
     """
     :raises:

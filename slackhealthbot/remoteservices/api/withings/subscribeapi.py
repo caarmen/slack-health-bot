@@ -1,7 +1,6 @@
 import logging
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.core.exceptions import UserLoggedOutException
@@ -13,7 +12,7 @@ from slackhealthbot.settings import Settings
 @inject
 async def subscribe(
     oauth_token: OAuthFields,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     callbackurl = (
         f"{settings.withings_oauth_settings.callback_url}withings-notification-webhook/"
