@@ -1,5 +1,8 @@
 import datetime as dt
 
+from dependency_injector.wiring import Provide, inject
+
+from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
@@ -7,9 +10,12 @@ from slackhealthbot.domain.models.activity import DailyActivityStats
 from slackhealthbot.domain.usecases.fitbit import usecase_process_daily_activity
 
 
+@inject
 async def do(
-    local_fitbit_repo: LocalFitbitRepository,
     type_ids: set[int],
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ):
     list_daily_activities: list[DailyActivityStats] = (
         await local_fitbit_repo.get_daily_activities_by_type(

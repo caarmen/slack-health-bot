@@ -1,5 +1,8 @@
 import datetime
 
+from dependency_injector.wiring import Provide, inject
+
+from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
     UserIdentity,
@@ -9,10 +12,13 @@ from slackhealthbot.domain.usecases.fitbit import usecase_get_last_sleep
 from slackhealthbot.domain.usecases.slack import usecase_post_sleep
 
 
+@inject
 async def do(
-    local_fitbit_repo: LocalFitbitRepository,
     fitbit_userid: str,
     when: datetime.date,
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ) -> SleepData | None:
     user_identity: UserIdentity = (
         await local_fitbit_repo.get_user_identity_by_fitbit_userid(

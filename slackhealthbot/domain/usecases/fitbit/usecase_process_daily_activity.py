@@ -26,9 +26,11 @@ activity_names = {
 
 @inject
 async def do(
-    local_fitbit_repo: LocalFitbitRepository,
     daily_activity: DailyActivityStats,
     settings: Settings = Provide[Container.settings],
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ):
     now = dt.datetime.now(dt.timezone.utc)
     fitbit_userid = daily_activity.fitbit_userid

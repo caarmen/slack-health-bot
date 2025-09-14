@@ -16,9 +16,9 @@ from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
 
 @inject
 async def do(
-    local_repo: LocalFitbitRepository,
     slack_alias: str,
     token: dict[str, Any],
+    local_repo: LocalFitbitRepository = Provide[Container.local_fitbit_repository],
     remote_repo: RemoteFitbitRepository = Provide[Container.remote_fitbit_repository],
 ):
     user: User = await _upsert_user(local_repo, remote_repo, slack_alias, token)

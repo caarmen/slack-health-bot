@@ -14,10 +14,12 @@ from slackhealthbot.settings import Settings, StreakMode
 
 @inject
 async def do(
-    local_fitbit_repo: LocalFitbitRepository,
     daily_activity: DailyActivityStats,
     end_date: dt.date,
     settings: Settings = Provide[Container.settings],
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ) -> int | None:
     """
     If we have a goal and we met it at the given date, return the number of consecutive

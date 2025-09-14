@@ -19,10 +19,12 @@ from slackhealthbot.settings import Settings
 
 @inject
 async def do(  # noqa: PLR0913 deal with this later
-    local_fitbit_repo: LocalFitbitRepository,
     fitbit_userid: str,
     when: datetime.datetime,
     settings: Settings = Provide[Container.settings],
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ) -> ActivityData | None:
     user_identity: UserIdentity = (
         await local_fitbit_repo.get_user_identity_by_fitbit_userid(

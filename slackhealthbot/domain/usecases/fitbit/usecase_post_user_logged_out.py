@@ -1,3 +1,6 @@
+from dependency_injector.wiring import Provide, inject
+
+from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
     UserIdentity,
@@ -7,9 +10,10 @@ from slackhealthbot.domain.usecases.slack import (
 )
 
 
+@inject
 async def do(
-    fitbit_repo: LocalFitbitRepository,
     fitbit_userid: str,
+    fitbit_repo: LocalFitbitRepository = Provide[Container.local_fitbit_repository],
 ):
     user_identity: UserIdentity = await fitbit_repo.get_user_identity_by_fitbit_userid(
         fitbit_userid=fitbit_userid,

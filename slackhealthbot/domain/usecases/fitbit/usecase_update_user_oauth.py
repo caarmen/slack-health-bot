@@ -17,16 +17,19 @@ class UpdateTokenUseCase(Callable):
     @inject
     def __init__(
         self,
-        request_context_fitbit_repository: Callable[[], LocalFitbitRepository],
         remote_repo: RemoteFitbitRepository = Provide[
             Container.remote_fitbit_repository
         ],
     ):
-        self.request_context_fitbit_repository = request_context_fitbit_repository
         self.remote_repo = remote_repo
 
-    async def __call__(self, token: dict[str, Any], **kwargs):
-        local_repo: LocalFitbitRepository = self.request_context_fitbit_repository()
+    @inject
+    async def __call__(
+        self,
+        token: dict[str, Any],
+        local_repo: LocalFitbitRepository = Provide[Container.local_fitbit_repository],
+        **kwargs,
+    ):
         oauth_fields: OAuthFields = self.remote_repo.parse_oauth_fields(token)
         await local_repo.update_oauth_data(
             fitbit_userid=oauth_fields.oauth_userid,

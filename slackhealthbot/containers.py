@@ -5,8 +5,14 @@ from slackhealthbot.data.database.connection import (
     create_async_session_maker,
     session_context_manager,
 )
+from slackhealthbot.data.repositories.sqlalchemyfitbitrepository import (
+    SQLAlchemyFitbitRepository,
+)
 from slackhealthbot.data.repositories.sqlalchemywithingsrepository import (
     SQLAlchemyWithingsRepository,
+)
+from slackhealthbot.domain.localrepository.localfitbitrepository import (
+    LocalFitbitRepository,
 )
 from slackhealthbot.domain.localrepository.localwithingsrepository import (
     LocalWithingsRepository,
@@ -41,9 +47,13 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.domain.usecases.fitbit.usecase_get_last_sleep",
             "slackhealthbot.domain.usecases.fitbit.usecase_login_user",
             "slackhealthbot.domain.usecases.fitbit.usecase_process_daily_activity",
+            "slackhealthbot.domain.usecases.fitbit.usecase_process_daily_activities",
             "slackhealthbot.domain.usecases.fitbit.usecase_process_new_activity",
+            "slackhealthbot.domain.usecases.fitbit.usecase_process_new_sleep",
             "slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth",
             "slackhealthbot.domain.usecases.fitbit.usecase_calculate_streak",
+            "slackhealthbot.domain.usecases.fitbit.usecase_post_user_logged_out",
+            "slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth",
             "slackhealthbot.domain.usecases.withings.usecase_get_last_weight",
             "slackhealthbot.domain.usecases.withings.usecase_login_user",
             "slackhealthbot.domain.usecases.withings.usecase_process_new_weight",
@@ -95,5 +105,10 @@ class Container(containers.DeclarativeContainer):
 
     local_withings_repository: LocalWithingsRepository = providers.Factory(
         SQLAlchemyWithingsRepository,
+        db,
+    )
+
+    local_fitbit_repository: LocalFitbitRepository = providers.Factory(
+        SQLAlchemyFitbitRepository,
         db,
     )
