@@ -3,7 +3,7 @@ import logging
 from asyncio import Lock
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Request, Response, status
 from pydantic import BaseModel
 
 from slackhealthbot.containers import Container
@@ -28,7 +28,7 @@ router = APIRouter()
 async def get_fitbit_authorization(
     slack_alias: str,
     request: Request,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     request.session["slack_alias"] = slack_alias
     return await oauth.create_client(
@@ -40,7 +40,7 @@ async def get_fitbit_authorization(
 @inject
 def validate_fitbit_notification_webhook(
     verify: str | None = None,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     # See the fitbit verification doc:
     # https://dev.fitbit.com/build/reference/web-api/developer-guide/using-subscriptions/#Verifying-a-Subscriber

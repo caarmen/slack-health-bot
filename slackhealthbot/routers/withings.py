@@ -57,7 +57,7 @@ async def withings_oauth_webhook(
 async def get_withings_authorization(
     slack_alias: str,
     request: Request,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     request.session["slack_alias"] = slack_alias
     return await oauth.create_client(
