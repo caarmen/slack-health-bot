@@ -14,7 +14,9 @@ def get_connection_url(
     # In the case of running "alembic upgrade head", it accesses this
     # function without going through the dependency injection.
     if not isinstance(settings, Settings):
-        from slackhealthbot.containers import Container
+        # If we put this import at the top of the file, we get a circular dependency issue,
+        # as the containers module imports symbols from this file (to build db dependencies).
+        from slackhealthbot.containers import Container  # noqa: PLC0415
 
         settings = Container.settings.provided()
     return f"sqlite+aiosqlite:///{settings.app_settings.database_path}"
