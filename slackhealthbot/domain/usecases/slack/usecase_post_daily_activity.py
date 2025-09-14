@@ -11,7 +11,7 @@ from slackhealthbot.domain.usecases.slack.usecase_activity_message_formatter imp
     get_activity_minutes_change_icon,
     get_ranking_text,
 )
-from slackhealthbot.settings import ReportField, Settings
+from slackhealthbot.settings import Report, ReportField, Settings
 
 
 @inject
@@ -179,17 +179,11 @@ New daily {activity_name} activity from <@{slack_alias}>:
         and history.new_daily_activity_stats.sum_distance_km
     ):
         message += f"    • Distance: {history.new_daily_activity_stats.sum_distance_km:.3f} km {distance_km_icon} {distance_km_record_text}"
-        if (
-            report_settings.daily_goals
-            and report_settings.daily_goals.distance_km
-            and history.new_daily_activity_stats.sum_distance_km
-            > report_settings.daily_goals.distance_km
-        ):
-            message += " Goal reached! 👍"
-        if history.streak_distance_km_days:
-            message += f" {history.streak_distance_km_days} day streak! 👏"
-        message += """
-"""
+        message += create_motivational_message(
+            report_settings=report_settings,
+            history=history,
+        )
+
     if (
         ReportField.fat_burn_minutes in report_settings.fields
         and history.new_daily_activity_stats.sum_fat_burn_minutes
@@ -216,3 +210,28 @@ New daily {activity_name} activity from <@{slack_alias}>:
 """
 
     return message
+
+
+def create_motivational_message(
+    report_settings: Report,
+    history: DailyActivityHistory,
+) -> str:
+    """
+    Create a motivational message including, if relevant, a note that the goal
+        was reached, and that a streak has been accomplished.
+
+    :return: the motivational message, or an empty string if not relevant.
+    """
+    motivational_message = ""
+    if (
+        report_settings.daily_goals
+        and report_settings.daily_goals.distance_km
+        and history.new_daily_activity_stats.sum_distance_km
+        > report_settings.daily_goals.distance_km
+    ):
+        motivational_message += " Goal reached! 👍"
+    if history.streak_distance_km_days:
+        motivational_message += f" {history.streak_distance_km_days} day streak! 👏"
+    motivational_message += """
+"""
+    return motivational_message
