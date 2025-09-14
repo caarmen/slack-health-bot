@@ -14,13 +14,6 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
 from slackhealthbot.domain.models.activity import ActivityData
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
-from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
-    WebhookSlackRepository,
-)
-from slackhealthbot.routers.dependencies import fitbit_repository_factory
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks.fitbitpoll import Cache, do_poll
 from tests.testsupport.factories.factories import (
@@ -34,10 +27,10 @@ from tests.testsupport.testdata.fitbit_scenarios import activity_scenarios
 @pytest.mark.asyncio
 async def test_refresh_token_ok(  # noqa: PLR0913
     mocked_async_session: AsyncSession,
-    remote_fitbit_repository: RemoteFitbitRepository,
     client: TestClient,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
+    local_fitbit_repository: LocalFitbitRepository,
     settings: Settings,
 ):
     """
@@ -102,50 +95,45 @@ async def test_refresh_token_ok(  # noqa: PLR0913
     # Use the client as a context manager so that the app lifespan hook is called
     # https://fastapi.tiangolo.com/advanced/testing-events/
     with client:
-        async with fitbit_repository_factory(mocked_async_session)() as repo:
-            await do_poll(
-                local_fitbit_repo=repo,
-                remote_fitbit_repo=remote_fitbit_repository,
-                slack_repo=WebhookSlackRepository(),
-                cache=Cache(),
-                when=datetime.date(2023, 1, 23),
-            )
+        await do_poll(
+            cache=Cache(),
+            when=datetime.date(2023, 1, 23),
+        )
 
-            repo_user = await repo.get_user_by_fitbit_userid(
-                fitbit_userid=fitbit_user.oauth_userid
-            )
+        repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
+            fitbit_userid=fitbit_user.oauth_userid
+        )
 
-            # Then the access token is refreshed.
-            assert fitbit_activity_request.call_count == 1
-            assert (
-                fitbit_activity_request.calls[0].request.headers["authorization"]
-                == "Bearer some new access token"
-            )
-            assert oauth_token_refresh_request.call_count == 1
-            assert repo_user.oauth_data.oauth_access_token == "some new access token"
-            assert repo_user.oauth_data.oauth_refresh_token == "some new refresh token"
+        # Then the access token is refreshed.
+        assert fitbit_activity_request.call_count == 1
+        assert (
+            fitbit_activity_request.calls[0].request.headers["authorization"]
+            == "Bearer some new access token"
+        )
+        assert oauth_token_refresh_request.call_count == 1
+        assert repo_user.oauth_data.oauth_access_token == "some new access token"
+        assert repo_user.oauth_data.oauth_refresh_token == "some new refresh token"
 
-            # And the latest activity data is updated in the database
-            repo_activity: ActivityData = (
-                await repo.get_latest_activity_by_user_and_type(
-                    fitbit_userid=repo_user.identity.fitbit_userid,
-                    type_id=activity_type_id,
-                )
+        # And the latest activity data is updated in the database
+        repo_activity: ActivityData = (
+            await local_fitbit_repository.get_latest_activity_by_user_and_type(
+                fitbit_userid=repo_user.identity.fitbit_userid,
+                type_id=activity_type_id,
             )
-            assert repo_activity.log_id == scenario.expected_new_last_activity_log_id
+        )
+        assert repo_activity.log_id == scenario.expected_new_last_activity_log_id
 
-            # And the message was sent to slack as expected
-            actual_message = json.loads(slack_request.calls[0].request.content)[
-                "text"
-            ].replace("\n", "")
-            assert re.search(scenario.expected_message_pattern, actual_message)
-            assert "None" not in actual_message
+        # And the message was sent to slack as expected
+        actual_message = json.loads(slack_request.calls[0].request.content)[
+            "text"
+        ].replace("\n", "")
+        assert re.search(scenario.expected_message_pattern, actual_message)
+        assert "None" not in actual_message
 
 
 @pytest.mark.asyncio
 async def test_refresh_token_fail(  # noqa: PLR0913
     local_fitbit_repository: LocalFitbitRepository,
-    remote_fitbit_repository: RemoteFitbitRepository,
     client: TestClient,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
@@ -204,8 +192,6 @@ async def test_refresh_token_fail(  # noqa: PLR0913
     with client:
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
-            remote_fitbit_repo=remote_fitbit_repository,
-            slack_repo=WebhookSlackRepository(),
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )
@@ -247,7 +233,6 @@ class LoginScenario(enum.Enum):
 @pytest.mark.asyncio
 async def test_logged_out(  # noqa: PLR0913
     local_fitbit_repository: LocalFitbitRepository,
-    remote_fitbit_repository: RemoteFitbitRepository,
     client: TestClient,
     respx_mock: MockRouter,
     fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
@@ -318,8 +303,6 @@ async def test_logged_out(  # noqa: PLR0913
     with client:
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
-            remote_fitbit_repo=remote_fitbit_repository,
-            slack_repo=WebhookSlackRepository(),
             cache=Cache(),
             when=datetime.date(2023, 1, 23),
         )

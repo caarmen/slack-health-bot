@@ -1,5 +1,4 @@
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.models.activity import DailyActivityHistory
@@ -15,12 +14,13 @@ from slackhealthbot.domain.usecases.slack.usecase_activity_message_formatter imp
 from slackhealthbot.settings import ReportField, Settings
 
 
+@inject
 async def do(
-    repo: RemoteSlackRepository,
     slack_alias: str,
     activity_name: str,
     history: DailyActivityHistory,
     record_history_days: int,
+    slack_repo: RemoteSlackRepository = Provide[Container.slack_repository],
 ):
     message = create_message(
         slack_alias=slack_alias,
@@ -28,7 +28,7 @@ async def do(
         history=history,
         record_history_days=record_history_days,
     )
-    await repo.post_message(message.strip())
+    await slack_repo.post_message(message.strip())
 
 
 @inject
@@ -37,7 +37,7 @@ def create_message(
     activity_name: str,
     history: DailyActivityHistory,
     record_history_days: int,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ) -> str:
     if history.previous_daily_activity_stats:
         calories_icon = (

@@ -5,7 +5,6 @@ import httpx
 from authlib.common.urls import add_params_to_qs
 from authlib.integrations.httpx_client.oauth2_client import AsyncOAuth2Client
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.core.exceptions import UserLoggedOutException
@@ -55,7 +54,7 @@ def is_auth_failure(response) -> bool:
 @inject
 def configure(
     update_token_callback: Callable[[dict[str, Any]], Coroutine],
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     oauth.register(
         name=settings.withings_oauth_settings.name,

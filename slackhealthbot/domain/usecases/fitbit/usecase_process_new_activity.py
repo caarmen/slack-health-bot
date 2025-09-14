@@ -1,7 +1,6 @@
 import datetime
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
@@ -13,12 +12,6 @@ from slackhealthbot.domain.models.activity import (
     ActivityHistory,
     TopActivityStats,
 )
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
-)
 from slackhealthbot.domain.usecases.fitbit import usecase_get_last_activity
 from slackhealthbot.domain.usecases.slack import usecase_post_activity
 from slackhealthbot.settings import Settings
@@ -26,12 +19,12 @@ from slackhealthbot.settings import Settings
 
 @inject
 async def do(  # noqa: PLR0913 deal with this later
-    local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
-    slack_repo: RemoteSlackRepository,
     fitbit_userid: str,
     when: datetime.datetime,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ) -> ActivityData | None:
     user_identity: UserIdentity = (
         await local_fitbit_repo.get_user_identity_by_fitbit_userid(
@@ -40,7 +33,6 @@ async def do(  # noqa: PLR0913 deal with this later
     )
     new_activity = await usecase_get_last_activity.do(
         local_repo=local_fitbit_repo,
-        remote_repo=remote_fitbit_repo,
         fitbit_userid=fitbit_userid,
         when=when,
     )
@@ -99,7 +91,6 @@ async def do(  # noqa: PLR0913 deal with this later
         )
     )
     await usecase_post_activity.do(
-        repo=slack_repo,
         slack_alias=user_identity.slack_alias,
         activity_name=activity_name,
         activity_history=ActivityHistory(

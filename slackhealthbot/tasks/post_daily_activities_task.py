@@ -1,23 +1,15 @@
 import asyncio
 import datetime as dt
 import logging
-from typing import AsyncContextManager, Callable, Coroutine
+from typing import Coroutine
 
-from slackhealthbot.domain.localrepository.localfitbitrepository import (
-    LocalFitbitRepository,
-)
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
-)
 from slackhealthbot.domain.usecases.fitbit import usecase_process_daily_activities
 
 logger = logging.getLogger(__name__)
 
 
 async def post_daily_activities(
-    local_fitbit_repo_factory: Callable[[], AsyncContextManager[LocalFitbitRepository]],
     activity_type_ids: set[int],
-    slack_repo: RemoteSlackRepository,
     post_time: dt.time,
 ) -> Coroutine[None, None, asyncio.Task]:
 
@@ -56,12 +48,9 @@ async def post_daily_activities(
                 """
                 await asyncio.sleep(time_until_next_task_datetime_s + 3)
 
-                async with local_fitbit_repo_factory() as local_fitbit_repo:
-                    await usecase_process_daily_activities.do(
-                        local_fitbit_repo=local_fitbit_repo,
-                        type_ids=activity_type_ids,
-                        slack_repo=slack_repo,
-                    )
+                await usecase_process_daily_activities.do(
+                    type_ids=activity_type_ids,
+                )
             except Exception:
                 logging.error("Error processing daily activities", exc_info=True)
 

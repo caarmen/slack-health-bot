@@ -7,10 +7,6 @@ from httpx import Response
 from respx import MockRouter
 
 from slackhealthbot.data.database import models
-from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
-    WebhookSlackRepository,
-)
-from slackhealthbot.routers.dependencies import fitbit_repository_factory
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks.post_daily_activities_task import dt as dt_to_freeze
 from slackhealthbot.tasks.post_daily_activities_task import post_daily_activities
@@ -115,11 +111,9 @@ async def test_post_daily_activities(
         frozen_datetime_args=(2024, 8, 2, 23, 49, 59),
     )
     task: asyncio.Task = await post_daily_activities(
-        local_fitbit_repo_factory=fitbit_repository_factory(mocked_async_session),
         activity_type_ids=set(
             settings.app_settings.fitbit.activities.daily_activity_type_ids
         ),
-        slack_repo=WebhookSlackRepository(),
         post_time=settings.app_settings.fitbit.activities.daily_report_time,
     )
 

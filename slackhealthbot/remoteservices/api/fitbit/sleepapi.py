@@ -3,11 +3,8 @@ import json
 import logging
 from typing import Annotated, Literal, Self, Union
 
-from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 from pydantic import BaseModel, Field
 
-from slackhealthbot.containers import Container
 from slackhealthbot.core.models import OAuthFields
 from slackhealthbot.oauth import requests
 from slackhealthbot.settings import Settings
@@ -65,11 +62,10 @@ class FitbitSleep(BaseModel):
         return cls(**json.loads(text))
 
 
-@inject
 async def get_sleep(
     oauth_token: OAuthFields,
     when: datetime.date,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings,
 ) -> FitbitSleep | None:
     """
     :raises:

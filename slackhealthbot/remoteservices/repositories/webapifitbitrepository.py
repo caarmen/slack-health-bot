@@ -14,14 +14,19 @@ from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
 from slackhealthbot.remoteservices.api.fitbit import activityapi, sleepapi, subscribeapi
 from slackhealthbot.remoteservices.api.fitbit.activityapi import FitbitActivities
 from slackhealthbot.remoteservices.api.fitbit.sleepapi import FitbitSleep
+from slackhealthbot.settings import Settings
 
 
 class WebApiFitbitRepository(RemoteFitbitRepository):
+    def __init__(self, settings: Settings):
+        super().__init__()
+        self.settings = settings
+
     async def subscribe(
         self,
         oauth_fields: OAuthFields,
     ):
-        await subscribeapi.subscribe(oauth_fields)
+        await subscribeapi.subscribe(oauth_fields, self.settings)
 
     async def get_sleep(
         self,
@@ -29,7 +34,9 @@ class WebApiFitbitRepository(RemoteFitbitRepository):
         when: datetime.date,
     ) -> SleepData | None:
         sleep: FitbitSleep = await sleepapi.get_sleep(
-            oauth_token=oauth_fields, when=when
+            oauth_token=oauth_fields,
+            when=when,
+            settings=self.settings,
         )
         return remote_service_sleep_to_domain_sleep(sleep) if sleep else None
 
@@ -39,6 +46,7 @@ class WebApiFitbitRepository(RemoteFitbitRepository):
         activities: FitbitActivities | None = await activityapi.get_activity(
             oauth_token=oauth_fields,
             when=when,
+            settings=self.settings,
         )
         return remote_service_activity_to_domain_activity(activities)
 

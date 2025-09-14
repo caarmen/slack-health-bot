@@ -1,7 +1,6 @@
 import datetime as dt
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
@@ -15,10 +14,12 @@ from slackhealthbot.settings import Settings, StreakMode
 
 @inject
 async def do(
-    local_fitbit_repo: LocalFitbitRepository,
     daily_activity: DailyActivityStats,
     end_date: dt.date,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ) -> int | None:
     """
     If we have a goal and we met it at the given date, return the number of consecutive

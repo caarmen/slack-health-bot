@@ -4,7 +4,7 @@ from typing import Any, Callable, Coroutine
 import httpx
 from authlib.integrations.httpx_client.oauth2_client import AsyncOAuth2Client
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends, status
+from fastapi import status
 
 from slackhealthbot.containers import Container
 from slackhealthbot.core.exceptions import UserLoggedOutException
@@ -40,7 +40,7 @@ def is_auth_failure(response) -> bool:
 @inject
 def configure(
     update_token_callback: Callable[[dict[str, Any]], Coroutine],
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     oauth.register(
         name=settings.fitbit_oauth_settings.name,

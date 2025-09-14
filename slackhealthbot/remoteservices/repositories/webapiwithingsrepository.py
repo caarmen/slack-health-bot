@@ -5,14 +5,19 @@ from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
     RemoteWithingsRepository,
 )
 from slackhealthbot.remoteservices.api.withings import subscribeapi, weightapi
+from slackhealthbot.settings import Settings
 
 
 class WebApiWithingsRepository(RemoteWithingsRepository):
+    def __init__(self, settings: Settings):
+        super().__init__()
+        self.settings = settings
+
     async def subscribe(
         self,
         oauth_fields: OAuthFields,
     ):
-        await subscribeapi.subscribe(oauth_fields)
+        await subscribeapi.subscribe(oauth_fields, self.settings)
 
     async def get_last_weight_kg(
         self,
@@ -24,6 +29,7 @@ class WebApiWithingsRepository(RemoteWithingsRepository):
             oauth_token=oauth_fields,
             startdate=startdate,
             enddate=enddate,
+            settings=self.settings,
         )
 
     def parse_oauth_fields(

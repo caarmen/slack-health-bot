@@ -2,22 +2,14 @@ import asyncio
 import dataclasses
 import datetime
 import logging
-from typing import AsyncContextManager, Callable
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.core.exceptions import UserLoggedOutException
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
     UserIdentity,
-)
-from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
-    RemoteFitbitRepository,
-)
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
 )
 from slackhealthbot.domain.usecases.fitbit import (
     usecase_process_new_activity,
@@ -45,7 +37,6 @@ async def handle_success_poll(
 
 
 async def handle_fail_poll(
-    slack_repo: RemoteSlackRepository,
     fitbit_userid: str,
     slack_alias: str,
     when: datetime.date,
@@ -54,7 +45,6 @@ async def handle_fail_poll(
     last_error_post = cache.cache_fail.get(fitbit_userid)
     if not last_error_post or last_error_post < when:
         await usecase_post_user_logged_out.do(
-            repo=slack_repo,
             slack_alias=slack_alias,
             service="fitbit",
         )
@@ -63,17 +53,11 @@ async def handle_fail_poll(
 
 async def fitbit_poll(
     cache: Cache,
-    local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
-    slack_repo: RemoteSlackRepository,
 ):
     logging.info("fitbit poll")
     today = datetime.date.today()
     try:
         await do_poll(
-            local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
-            slack_repo=slack_repo,
             cache=cache,
             when=today,
         )
@@ -81,21 +65,19 @@ async def fitbit_poll(
         logging.error("Error polling fitbit", exc_info=True)
 
 
+@inject
 async def do_poll(
-    local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
-    slack_repo: RemoteSlackRepository,
     cache: Cache,
     when: datetime.date,
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ):
     user_identities: list[UserIdentity] = (
         await local_fitbit_repo.get_all_user_identities()
     )
     for user_identity in user_identities:
         await fitbit_poll_sleep(
-            local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
-            slack_repo=slack_repo,
             cache=cache,
             poll_target=PollTarget(
                 when=when,
@@ -103,9 +85,6 @@ async def do_poll(
             ),
         )
         await fitbit_poll_activity(
-            local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
-            slack_repo=slack_repo,
             cache=cache,
             poll_target=PollTarget(
                 when=when,
@@ -121,23 +100,16 @@ class PollTarget:
 
 
 async def fitbit_poll_activity(
-    local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
-    slack_repo: RemoteSlackRepository,
     cache: Cache,
     poll_target: PollTarget,
 ):
     try:
         await usecase_process_new_activity.do(
-            local_fitbit_repo=local_fitbit_repo,
-            remote_fitbit_repo=remote_fitbit_repo,
-            slack_repo=slack_repo,
             fitbit_userid=poll_target.user_identity.fitbit_userid,
             when=datetime.datetime.now(),
         )
     except UserLoggedOutException:
         await handle_fail_poll(
-            slack_repo=slack_repo,
             fitbit_userid=poll_target.user_identity.fitbit_userid,
             slack_alias=poll_target.user_identity.slack_alias,
             when=poll_target.when,
@@ -146,9 +118,6 @@ async def fitbit_poll_activity(
 
 
 async def fitbit_poll_sleep(
-    local_fitbit_repo: LocalFitbitRepository,
-    remote_fitbit_repo: RemoteFitbitRepository,
-    slack_repo: RemoteSlackRepository,
     cache: Cache,
     poll_target: PollTarget,
 ):
@@ -158,15 +127,11 @@ async def fitbit_poll_sleep(
     if not latest_successful_poll or latest_successful_poll < poll_target.when:
         try:
             sleep_data = await usecase_process_new_sleep.do(
-                local_fitbit_repo=local_fitbit_repo,
-                remote_fitbit_repo=remote_fitbit_repo,
-                slack_repo=slack_repo,
                 fitbit_userid=poll_target.user_identity.fitbit_userid,
                 when=poll_target.when,
             )
         except UserLoggedOutException:
             await handle_fail_poll(
-                slack_repo=slack_repo,
                 fitbit_userid=poll_target.user_identity.fitbit_userid,
                 slack_alias=poll_target.user_identity.slack_alias,
                 when=poll_target.when,
@@ -181,14 +146,10 @@ async def fitbit_poll_sleep(
                 )
 
 
-@inject
 async def schedule_fitbit_poll(  # noqa: PLR0913 deal with it later
-    local_fitbit_repo_factory: Callable[[], AsyncContextManager[LocalFitbitRepository]],
-    remote_fitbit_repo: RemoteFitbitRepository,
-    slack_repo: RemoteSlackRepository,
     initial_delay_s: int | None = None,
     cache: Cache = None,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
 ):
     if cache is None:
         cache = Cache()
@@ -199,13 +160,9 @@ async def schedule_fitbit_poll(  # noqa: PLR0913 deal with it later
     async def run_with_delay():
         await asyncio.sleep(initial_delay_s)
         while True:
-            async with local_fitbit_repo_factory() as local_fitbit_repo:
-                await fitbit_poll(
-                    cache=cache,
-                    local_fitbit_repo=local_fitbit_repo,
-                    remote_fitbit_repo=remote_fitbit_repo,
-                    slack_repo=slack_repo,
-                )
+            await fitbit_poll(
+                cache=cache,
+            )
             await asyncio.sleep(settings.app_settings.fitbit.poll.interval_seconds)
 
     return asyncio.create_task(run_with_delay())

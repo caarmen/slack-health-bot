@@ -1,7 +1,6 @@
 import datetime as dt
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import Depends
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
@@ -12,9 +11,6 @@ from slackhealthbot.domain.models.activity import (
     DailyActivityHistory,
     DailyActivityStats,
     TopActivityStats,
-)
-from slackhealthbot.domain.remoterepository.remoteslackrepository import (
-    RemoteSlackRepository,
 )
 from slackhealthbot.domain.usecases.fitbit import usecase_calculate_streak
 from slackhealthbot.domain.usecases.slack import usecase_post_daily_activity
@@ -30,10 +26,11 @@ activity_names = {
 
 @inject
 async def do(
-    local_fitbit_repo: LocalFitbitRepository,
-    slack_repo: RemoteSlackRepository,
     daily_activity: DailyActivityStats,
-    settings: Settings = Depends(Provide[Container.settings]),
+    settings: Settings = Provide[Container.settings],
+    local_fitbit_repo: LocalFitbitRepository = Provide[
+        Container.local_fitbit_repository
+    ],
 ):
     now = dt.datetime.now(dt.timezone.utc)
     fitbit_userid = daily_activity.fitbit_userid
@@ -79,7 +76,6 @@ async def do(
     )
 
     await usecase_post_daily_activity.do(
-        repo=slack_repo,
         slack_alias=user_identity.slack_alias,
         activity_name=activity_names.get(daily_activity.type_id, "Unknown"),
         history=history,
