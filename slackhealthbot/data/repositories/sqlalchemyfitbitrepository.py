@@ -232,6 +232,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 last_sleep_wake_minutes=sleep.wake_minutes,
             )
         )
+        await self.db.commit()
 
     async def get_sleep_by_fitbit_userid(
         self,
