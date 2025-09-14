@@ -66,6 +66,7 @@ class Report(BaseModel):
     fields: Optional[list[ReportField]] = None
     daily_goals: Goals | None = None
     streak_mode: StreakMode = StreakMode.strict
+    ai_motivational_message_frequency_days: int = 10
 
 
 class ActivityType(BaseModel):
@@ -138,6 +139,10 @@ class Withings(BaseModel):
     oauth_scopes: list[str] = ["user.metrics", "user.activity"]
 
 
+class OpenAi(BaseModel):
+    model: str
+
+
 class Logging(BaseModel):
     sql_log_level: str = "WARNING"
 
@@ -150,6 +155,7 @@ class AppSettings(BaseSettings):
     logging: Logging
     withings: Withings
     fitbit: Fitbit
+    openai: OpenAi
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
     )
@@ -202,6 +208,7 @@ class SecretSettings(BaseSettings):
     fitbit_client_secret: str
     fitbit_client_subscriber_verification_code: str
     slack_webhook_url: HttpUrl
+    openai_api_key: str | None = None
     model_config = SettingsConfigDict(env_file=".env")
 
 

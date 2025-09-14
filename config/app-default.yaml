@@ -48,6 +48,8 @@ fitbit:
       #   days were logged which didn't meet the daily_goals.
       #   Days with no logged activity are ignored.
       streak_mode: strict
+      # Send a motivational message when the streak is extended, every X days.
+      ai_motivational_message_frequency_days: 10
 
     activity_types:
       # Configuration specific to activity types.
@@ -86,3 +88,6 @@ fitbit:
         report:
           daily: false
           realtime: true
+
+openai:
+  model: gpt-5

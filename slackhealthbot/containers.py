@@ -20,6 +20,9 @@ from slackhealthbot.domain.localrepository.localwithingsrepository import (
 from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
+from slackhealthbot.domain.remoterepository.remoteopenairepository import (
+    RemoteOpenAiRepository,
+)
 from slackhealthbot.domain.remoterepository.remoteslackrepository import (
     RemoteSlackRepository,
 )
@@ -34,6 +37,9 @@ from slackhealthbot.remoteservices.repositories.webapiwithingsrepository import 
 )
 from slackhealthbot.remoteservices.repositories.webhookslackrepository import (
     WebhookSlackRepository,
+)
+from slackhealthbot.remoteservices.repositories.webopenairepository import (
+    WebOpenAiRepository,
 )
 from slackhealthbot.settings import AppSettings, SecretSettings, Settings
 
@@ -91,6 +97,10 @@ class Container(containers.DeclarativeContainer):
     )
     remote_withings_repository: RemoteWithingsRepository = providers.Factory(
         WebApiWithingsRepository,
+        settings,
+    )
+    openai_repository: RemoteOpenAiRepository = providers.Factory(
+        WebOpenAiRepository,
         settings,
     )
     session_factory: async_sessionmaker = providers.Singleton(

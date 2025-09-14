@@ -106,6 +106,7 @@ graph
             RemoteFitbitRepository("`*RemoteFitbitRepository*`"):::interface
             RemoteWithingsRepository("`*RemoteWithingsRepository*`"):::interface
             RemoteSlackRepository("`*RemoteSlackRepository*`"):::interface
+            RemoteOpenAiRepository("`*RemoteOpenAiRepository*`"):::interface
         end
     end
     subgraph RemoteServices[Remote services]
@@ -113,6 +114,7 @@ graph
             WebApiFitbitRepository
             WebApiWithingsRepository
             WebhookSlackRepository
+            WebOpenAiRepository
         end
         subgraph Apis
             FitbitApis
@@ -183,6 +185,7 @@ graph
             RemoteFitbitRepository("`*RemoteFitbitRepository*`"):::interface
             RemoteWithingsRepository("`*RemoteWithingsRepository*`"):::interface
             RemoteSlackRepository("`*RemoteSlackRepository*`"):::interface
+            RemoteOpenAiRepository("`*RemoteOpenAiRepository*`"):::interface
         end
     end
     subgraph RemoteServices[Remote services]
@@ -190,6 +193,7 @@ graph
             WebApiFitbitRepository
             WebApiWithingsRepository
             WebhookSlackRepository
+            WebOpenAiRepository
         end
         subgraph Apis
             FitbitApis
@@ -211,6 +215,7 @@ graph
     WithingsWebServer:::external
     FitbitWebServer:::external
     SlackWebServer:::external
+    OpenAiWebServer:::external
 
     Main-->Routes
     Main-->Tasks
@@ -221,6 +226,7 @@ graph
     DI--creates-->WebApiFitbitRepository
     DI--creates-->WebApiWithingsRepository
     DI--creates-->WebhookSlackRepository
+    DI--creates-->WebOpenAiRepository
     Tasks-->Domain
     Routes-->Domain
     LocalRepositories-->ORM
@@ -235,14 +241,18 @@ graph
     WebApiFitbitRepository--implements-->RemoteFitbitRepository
     WebApiWithingsRepository--implements-->RemoteWithingsRepository
     WebhookSlackRepository--implements-->RemoteSlackRepository
+    WebOpenAiRepository --implements-->RemoteOpenAiRepository
+    OpenAiSdk{{OpenAISdk}}
     WebApiFitbitRepository-->FitbitApis
     WebApiWithingsRepository-->WithingsApis
     WebhookSlackRepository-->SlackApis
+    WebOpenAiRepository-->OpenAiSdk
     FitbitApis--http--->FitbitWebServer
     WithingsApis--http--->WithingsWebServer
     SlackApis--http--->SlackWebServer
     FitbitOAuth--http--->FitbitWebServer
     WithingsOAuth--http--->WithingsWebServer
+    OpenAiSdk--http--->OpenAiWebServer
 
     Domain-->Core
     RemoteServices-->Core
