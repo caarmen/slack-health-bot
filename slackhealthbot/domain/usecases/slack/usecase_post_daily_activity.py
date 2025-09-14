@@ -2,6 +2,9 @@ from dependency_injector.wiring import Provide, inject
 
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.models.activity import DailyActivityHistory
+from slackhealthbot.domain.remoterepository.remoteopenairepository import (
+    RemoteOpenAiRepository,
+)
 from slackhealthbot.domain.remoterepository.remoteslackrepository import (
     RemoteSlackRepository,
 )
@@ -22,7 +25,7 @@ async def do(
     record_history_days: int,
     slack_repo: RemoteSlackRepository = Provide[Container.slack_repository],
 ):
-    message = create_message(
+    message = await create_message(
         slack_alias=slack_alias,
         activity_name=activity_name,
         history=history,
@@ -32,7 +35,7 @@ async def do(
 
 
 @inject
-def create_message(
+async def create_message(
     slack_alias: str,
     activity_name: str,
     history: DailyActivityHistory,
@@ -179,7 +182,9 @@ New daily {activity_name} activity from <@{slack_alias}>:
         and history.new_daily_activity_stats.sum_distance_km
     ):
         message += f"    • Distance: {history.new_daily_activity_stats.sum_distance_km:.3f} km {distance_km_icon} {distance_km_record_text}"
-        message += create_motivational_message(
+        message += await create_motivational_message(
+            slack_alias=slack_alias,
+            activity_name=activity_name,
             report_settings=report_settings,
             history=history,
         )
@@ -212,13 +217,18 @@ New daily {activity_name} activity from <@{slack_alias}>:
     return message
 
 
-def create_motivational_message(
+@inject
+async def create_motivational_message(
+    slack_alias: str,
+    activity_name: str,
     report_settings: Report,
     history: DailyActivityHistory,
+    openai_repository: RemoteOpenAiRepository = Provide[Container.openai_repository],
 ) -> str:
     """
     Create a motivational message including, if relevant, a note that the goal
-        was reached, and that a streak has been accomplished.
+        was reached, that a streak has been accomplished, and a motivational
+        text created by an AI.
 
     :return: the motivational message, or an empty string if not relevant.
     """
@@ -232,6 +242,23 @@ def create_motivational_message(
         motivational_message += " Goal reached! 👍"
     if history.streak_distance_km_days:
         motivational_message += f" {history.streak_distance_km_days} day streak! 👏"
+        # If we reached our goal streak by a multiple of x days, include
+        # an additional motivational message from AI.
+        if (
+            history.streak_distance_km_days
+            % report_settings.ai_motivational_message_frequency_days
+            == 0
+            and report_settings.daily_goals.distance_km
+        ):
+            prompt = f"""
+Generate a short message, using emojis, of congratulations and encouragement for
+<@{slack_alias}> who just finished a {history.streak_distance_km_days} day streak of {activity_name}
+doing over {report_settings.daily_goals.distance_km} km every day.
+"""
+            ai_motivational_message = await openai_repository.create_response(prompt)
+            if ai_motivational_message:
+                motivational_message += f"""
+{ai_motivational_message}"""
     motivational_message += """
 """
     return motivational_message

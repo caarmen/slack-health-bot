@@ -40,3 +40,6 @@ fitbit:
         report:
           daily: true
           realtime: true
+
+openai:
+  model: gpt-5

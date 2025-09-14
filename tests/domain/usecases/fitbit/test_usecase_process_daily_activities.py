@@ -24,11 +24,31 @@ from tests.testsupport.factories.factories import (
 )
 from tests.testsupport.mock.builtins import freeze_time
 
+OPENAI_SUCCESS_RESPONSE = Response(
+    status_code=200,
+    json={
+        "output": [
+            {
+                "type": "message",
+                "content": [
+                    {
+                        "type": "output_text",
+                        "text": "Here is your nice motivational message",
+                    }
+                ],
+            }
+        ],
+    },
+)
+
+OPENAI_ERROR_RESPONSE = Response(status_code=503)
+
 
 @dataclasses.dataclass
 class DailyActivityScenario:
     id: str
     custom_conf: str | None
+    mock_openai_response: Response | None
     expected_activity_message: str
 
 
@@ -36,6 +56,7 @@ DAILY_ACTIVITY_SCENARIOS = [
     DailyActivityScenario(
         id="no custom conf",
         custom_conf=None,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Activity count: 2
     • Total duration: 15 minutes ↗️ New record (last 180 days)! 🏆
@@ -59,6 +80,7 @@ fitbit:
           daily_goals:
             distance_km: 0.01
 """,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 2 day streak! 👏""",
     ),
@@ -78,6 +100,7 @@ fitbit:
           daily_goals:
             distance_km: 12
 """,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 1 day streak! 👏""",
     ),
@@ -98,6 +121,7 @@ fitbit:
             distance_km: 12
           streak_mode: lax
 """,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 1 day streak! 👏""",
     ),
@@ -118,6 +142,52 @@ fitbit:
             distance_km: 2
           streak_mode: lax
 """,
+        mock_openai_response=None,
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 3 day streak! 👏""",
+    ),
+    DailyActivityScenario(
+        id="distance only, met goal today, yesterday, and goal prior date, lax streak, motivational message",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: false
+          fields:
+            - distance
+          daily_goals:
+            distance_km: 2
+          streak_mode: lax
+          ai_motivational_message_frequency_days: 3
+""",
+        mock_openai_response=OPENAI_SUCCESS_RESPONSE,
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 3 day streak! 👏
+Here is your nice motivational message""",
+    ),
+    DailyActivityScenario(
+        id="distance only, met goal today, yesterday, and goal prior date, lax streak, no motivational message because openai not working",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: false
+          fields:
+            - distance
+          daily_goals:
+            distance_km: 2
+          streak_mode: lax
+          ai_motivational_message_frequency_days: 3
+""",
+        mock_openai_response=OPENAI_ERROR_RESPONSE,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 3 day streak! 👏""",
     ),
@@ -136,6 +206,7 @@ fitbit:
             - distance
           streak_mode: lax
 """,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 4 day streak! 👏""",
     ),
@@ -155,6 +226,7 @@ fitbit:
           daily_goals:
             distance_km: 18
 """,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆""",
     ),
@@ -173,6 +245,7 @@ fitbit:
             - activity_count
             - fat_burn_minutes
 """,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Activity count: 2""",
     ),
@@ -185,6 +258,7 @@ fitbit:
       - name: Treadmill
         id: 90019
 """,
+        mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
     • Activity count: 2
     • Total duration: 15 minutes ↗️ New record (last 180 days)! 🏆
@@ -332,6 +406,12 @@ async def test_process_daily_activities(  # noqa: PLR0913
     slack_request = respx_mock.post(
         f"{settings.secret_settings.slack_webhook_url}"
     ).mock(return_value=Response(200))
+
+    # Mock an openai response
+    # https://platform.openai.com/docs/api-reference/responses/create
+    respx_mock.post("https://api.openai.com/v1/responses").mock(
+        return_value=scenario.mock_openai_response
+    )
 
     with monkeypatch.context() as mp:
         freeze_time(
