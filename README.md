@@ -20,6 +20,7 @@ Pushes messages to a pre-selected Slack channel, when users log new weight data 
 * Create an application in the [Withings developer dashboard](https://developer.withings.com/dashboard/).
 * Create an application in the [Fitbit developer dashboard](https://dev.fitbit.com/apps/).
 * Create an application [on Slack](https://api.slack.com/apps), with a webhook to post messages to a specific channel.
+* [Optional] Create an [OpenAI](https://openai.com/api/) api key. This is used to periodically generate and post motivational messages to Slack for activity streaks.
 * Copy the `.env.template` file to `.env`, and modify the values.
 * [Optional]: Copy the `config/app-custom.yaml.template` file to `app-custom.yaml`, and override any values which are defined in `config/app-default.yaml`.
 
