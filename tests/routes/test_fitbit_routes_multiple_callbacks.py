@@ -19,6 +19,7 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
 from slackhealthbot.domain.models.activity import ActivityData
 from slackhealthbot.domain.models.sleep import SleepData
 from slackhealthbot.main import app, lifespan
+from slackhealthbot.routers.fitbit import datetime as dt_to_freeze
 from slackhealthbot.settings import Settings
 from tests.testsupport.actions.parallel_requests import (
     execute_parallel_requests,
@@ -53,8 +54,6 @@ async def test_multiple_sleep_notifications(  # noqa PLR0913
     Then the latest sleep is updated in the database,
     And the messages are posted to slack with the correct patterns.
     """
-
-    from slackhealthbot.routers.fitbit import datetime as dt_to_freeze
 
     user_factory, fitbit_user_factory, _ = fitbit_factories
 
