@@ -16,13 +16,6 @@ from slackhealthbot.domain.usecases.fitbit import usecase_calculate_streak
 from slackhealthbot.domain.usecases.slack import usecase_post_daily_activity
 from slackhealthbot.settings import Settings
 
-activity_names = {
-    55001: "Spinning",
-    90013: "Walking",
-    90019: "Treadmill",
-    90001: "Bike",
-}
-
 
 @inject
 async def do(
@@ -75,9 +68,14 @@ async def do(
         streak_distance_km_days=streak_distance_km_days,
     )
 
+    activity_type = settings.app_settings.fitbit.activities.get_activity_type(
+        daily_activity.type_id
+    )
+    activity_name = activity_type.name if activity_type is not None else "Unknown"
+
     await usecase_post_daily_activity.do(
         slack_alias=user_identity.slack_alias,
-        activity_name=activity_names.get(daily_activity.type_id, "Unknown"),
+        activity_name=activity_name,
         history=history,
         record_history_days=settings.app_settings.fitbit.activities.history_days,
     )
