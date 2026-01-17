@@ -552,13 +552,13 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # Our goal is 20km.
         # We've logged the following activities, descending cronological order:
         #
-        # Friday: 25km            (in current streak)
-        # Thursday: 22km          (in current streak)
+        # Friday: 25km treadmill                       (in current streak)
+        # Thursday: 22km (18km treadmill, 4km walking) (in current streak)
         # Wednesday: no activity
-        # Tuesday: 21km           (in current streak)
-        # Monday: 15km            (broke the previous streak)
-        # Sunday: no activity
-        # Saturday: 23km
+        # Tuesday: 3km walking
+        # Monday: 21km treadmill                       (in current streak)
+        # Sunday: 15km treadmill                       (broke the previous streak)
+        # Saturday: no activity
 
         daily_activities_for_this_user_cte = (
             select(
@@ -590,9 +590,8 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # --------  --------- ---------------
         # 1         Friday    25km
         # 2         Thursday  22km
-        # 3         Tuesday   21km
-        # 4         Monday    15km
-        # 5         Saturday  23km
+        # 3         Monday    21km
+        # 4         Sunday    15km
 
         today_activity_alias = aliased(
             daily_activities_for_this_user_cte, alias="today_activity"
@@ -626,10 +625,9 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # today_row_num   today_date  today_distance_km  previous_day_row_num  previous_day_date  previous_day_distance_km
         # -------------   ----------  -----------------  --------------------  -----------------  ------------------------
         # 1               Friday      25km               2                     Thursday           22km
-        # 2               Thursday    22km               3                     Tuesday            21km
-        # 3               Tuesday     21km               4                     Monday             15km
-        # 4               Monday      15km               5                     Saturday           23km
-        # 5               Saturday    23km               null                  null               null
+        # 2               Thursday    22km               3                     Monday             21km
+        # 3               Monday      21km               4                     Sunday             15km
+        # 4               Sunday      15km               5                     Saturday           null
 
         today_filters = []
         previous_day_filters = []
@@ -660,7 +658,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # today_row_num
         # -------------
         # 3 (because the previous day was only 15km)
-        # 5 (because the previous day was null)
+        # 4 (because the previous day was null)
 
         streak_count = (await self.db.scalars(statement=streak_count_query)).first()
 
@@ -669,7 +667,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         #
         # Friday: 25km
         # Thursday: 22km
-        # Tuesday: 21km
+        # Monday: 21km
 
         if not streak_count:
             return 0
