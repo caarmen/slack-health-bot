@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import and_, desc, func, or_, select, update
+from sqlalchemy import and_, case, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -533,9 +533,19 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         up_to_date: datetime.date,
         min_distance_km: float | None,
     ):
+        # Filter on rows with either the primary or secondary type id
         type_ids_filter = [primary_type_id]
         if secondary_type_id is not None:
             type_ids_filter.append(secondary_type_id)
+
+        # When we group by date, this expression will tell us if
+        # at least one row FOR THAT DATE has the primary_type_id.
+        has_primary_expr = func.max(
+            case(
+                (models.FitbitDailyActivity.type_id == primary_type_id, 1),
+                else_=0,
+            )
+        )
 
         # The idea of this SQL query:
         # Example:
@@ -559,6 +569,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 func.sum(models.FitbitDailyActivity.sum_distance_km).label(
                     "total_sum_distance_km"
                 ),
+                has_primary_expr.label("has_primary_type_id"),
             )
             .join(models.FitbitUser)
             .where(
@@ -569,6 +580,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 )
             )
             .group_by(models.FitbitDailyActivity.date)
+            .having(has_primary_expr == 1)
             .order_by(desc(models.FitbitDailyActivity.date))
             .cte("daily_activities_for_this_user_cte")
         )
