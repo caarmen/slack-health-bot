@@ -533,6 +533,10 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         up_to_date: datetime.date,
         min_distance_km: float | None,
     ):
+        type_ids_filter = [primary_type_id]
+        if secondary_type_id is not None:
+            type_ids_filter.append(secondary_type_id)
+
         # The idea of this SQL query:
         # Example:
         # Our goal is 20km.
@@ -552,22 +556,25 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 .over(order_by=models.FitbitDailyActivity.date.desc())
                 .label("row_num"),
                 models.FitbitDailyActivity.date,
-                models.FitbitDailyActivity.sum_distance_km,
+                func.sum(models.FitbitDailyActivity.sum_distance_km).label(
+                    "total_sum_distance_km"
+                ),
             )
             .join(models.FitbitUser)
             .where(
                 and_(
                     models.FitbitDailyActivity.date <= up_to_date,
                     models.FitbitUser.oauth_userid == fitbit_userid,
-                    models.FitbitDailyActivity.type_id == primary_type_id,
+                    models.FitbitDailyActivity.type_id.in_(type_ids_filter),
                 )
             )
+            .group_by(models.FitbitDailyActivity.date)
             .order_by(desc(models.FitbitDailyActivity.date))
             .cte("daily_activities_for_this_user_cte")
         )
 
         # At this point, we have selected data like this:
-        # row_num   date      sum_distance_km
+        # row_num   date      total_sum_distance_km
         # --------  --------- ---------------
         # 1         Friday    25km
         # 2         Thursday  22km
@@ -586,10 +593,10 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             select(
                 today_activity_alias.c.row_num.label("today_row_num"),
                 today_activity_alias.c.date.label("today_date"),
-                today_activity_alias.c.sum_distance_km.label("today_distance_km"),
+                today_activity_alias.c.total_sum_distance_km.label("today_distance_km"),
                 previous_day_activity_alias.c.row_num.label("previous_day_row_num"),
                 previous_day_activity_alias.c.date.label("previous_day_date"),
-                previous_day_activity_alias.c.sum_distance_km.label(
+                previous_day_activity_alias.c.total_sum_distance_km.label(
                     "previous_day_distance_km"
                 ),
             ).outerjoin_from(
