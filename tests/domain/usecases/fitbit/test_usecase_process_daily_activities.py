@@ -119,7 +119,8 @@ fitbit:
             - distance
           daily_goals:
             distance_km: 12
-          streak_mode: lax
+          streak:
+            mode: lax
 """,
         mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
@@ -140,7 +141,8 @@ fitbit:
             - distance
           daily_goals:
             distance_km: 2
-          streak_mode: lax
+          streak:
+            mode: lax
 """,
         mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
@@ -161,7 +163,8 @@ fitbit:
             - distance
           daily_goals:
             distance_km: 2
-          streak_mode: lax
+          streak:
+            mode: lax
           ai_motivational_message_frequency_days: 3
 """,
         mock_openai_response=OPENAI_SUCCESS_RESPONSE,
@@ -184,7 +187,8 @@ fitbit:
             - distance
           daily_goals:
             distance_km: 2
-          streak_mode: lax
+          streak:
+            mode: lax
           ai_motivational_message_frequency_days: 3
 """,
         mock_openai_response=OPENAI_ERROR_RESPONSE,
@@ -204,7 +208,8 @@ fitbit:
           realtime: false
           fields:
             - distance
-          streak_mode: lax
+          streak:
+            mode: lax
 """,
         mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
@@ -266,6 +271,29 @@ fitbit:
     • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 2 day streak! 👏
     • Total cardio minutes: 12 ↗️ New record (last 180 days)! 🏆""",
     ),
+    DailyActivityScenario(
+        id="Lax streak with secondary activity",
+        custom_conf="""
+fitbit:
+  activities:
+    activity_types:
+      - name: Treadmill
+        id: 90019
+        report:
+          daily: true
+          realtime: true
+          fields:
+            - distance
+          streak:
+            mode: lax
+            secondary_activity_type_id: 90013
+          daily_goals:
+            distance_km: 12
+""",
+        mock_openai_response=None,
+        expected_activity_message="""New daily Treadmill activity from <@jdoe>:
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 3 day streak! 👏""",
+    ),
 ]
 
 
@@ -300,6 +328,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
     today = dt.datetime(2024, 8, 2, 10, 44, 55)
     yesterday = dt.datetime(2024, 8, 1, 10, 40, 3)
     activity_type = 90019
+    secondary_activity_type = 90013
     user: models.User = user_factory.create(slack_alias="jdoe")
 
     # Activity with very low stats, in the oldest date:
@@ -344,7 +373,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
 
     # Top stats for yesterday.
     # - 200 calories
-    # - 10km
+    # - 10km treadmill + 2.1km walking
     # - 11 minutes total
     # - 9 minutes cardio
     fitbit_activity_factory.create(
@@ -366,6 +395,18 @@ async def test_process_daily_activities(  # noqa: PLR0913
         distance_km=8.7,
         total_minutes=2,
         cardio_minutes=1,
+        fat_burn_minutes=None,
+        peak_minutes=None,
+        out_of_zone_minutes=None,
+        updated_at=yesterday,
+    )
+    fitbit_activity_factory.create(
+        fitbit_user_id=user.fitbit.id,
+        type_id=secondary_activity_type,
+        calories=30,
+        distance_km=2.1,
+        total_minutes=20,
+        cardio_minutes=None,
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,

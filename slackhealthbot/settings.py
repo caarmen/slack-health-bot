@@ -60,12 +60,17 @@ class StreakMode(enum.StrEnum):
     lax = enum.auto()
 
 
+class Streak(BaseModel):
+    mode: StreakMode = StreakMode.strict
+    secondary_activity_type_id: int | None = None
+
+
 class Report(BaseModel):
     daily: bool
     realtime: bool
     fields: Optional[list[ReportField]] = None
     daily_goals: Goals | None = None
-    streak_mode: StreakMode = StreakMode.strict
+    streak: Streak = Streak()
     ai_motivational_message_frequency_days: int = 10
 
 
