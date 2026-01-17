@@ -358,11 +358,12 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             sum_out_of_zone_minutes=daily_activity.sum_out_of_zone_minutes,
         )
 
-    async def get_daily_activity_streak_days_count_for_user_and_activity_type(
+    async def get_daily_activity_streak_days_count_for_user_and_activity_type(  # noqa: PLR0913
         self,
         fitbit_userid: str,
-        type_id: int,
+        primary_type_id: int,
         *,
+        secondary_type_id: int | None = None,
         before: datetime.date | None = None,
         min_distance_km: float | None = None,
         days_without_activies_break_streak=True,
@@ -377,7 +378,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                     and_(
                         models.FitbitDailyActivity.date == activity_date,
                         models.FitbitUser.oauth_userid == fitbit_userid,
-                        models.FitbitDailyActivity.type_id == type_id,
+                        models.FitbitDailyActivity.type_id == primary_type_id,
                     )
                 )
                 .order_by(desc(models.FitbitDailyActivity.date))
@@ -394,14 +395,16 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         if days_without_activies_break_streak:
             return await self._calculate_streak_strict_mode(
                 fitbit_userid=fitbit_userid,
-                type_id=type_id,
+                primary_type_id=primary_type_id,
+                secondary_type_id=secondary_type_id,
                 up_to_date=activity_date,
                 min_distance_km=min_distance_km,
             )
 
         return await self._calculate_streak_lax_mode(
             fitbit_userid=fitbit_userid,
-            type_id=type_id,
+            primary_type_id=primary_type_id,
+            secondary_type_id=secondary_type_id,
             up_to_date=activity_date,
             min_distance_km=min_distance_km,
         )
@@ -409,7 +412,8 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
     async def _calculate_streak_strict_mode(
         self,
         fitbit_userid: str,
-        type_id: int,
+        primary_type_id: int,
+        secondary_type_id: int | None,
         up_to_date: datetime.date,
         min_distance_km: float | None,
     ):
@@ -490,7 +494,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 and_(
                     models.FitbitDailyActivity.date <= up_to_date,
                     models.FitbitUser.oauth_userid == fitbit_userid,
-                    models.FitbitDailyActivity.type_id == type_id,
+                    models.FitbitDailyActivity.type_id == primary_type_id,
                     yesterday_activity_alias.date
                     == None,  # noqa E711 (sqlalchemy needs this)
                     *today_filters,
@@ -524,7 +528,8 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
     async def _calculate_streak_lax_mode(
         self,
         fitbit_userid: str,
-        type_id: int,
+        primary_type_id: int,
+        secondary_type_id: int | None,
         up_to_date: datetime.date,
         min_distance_km: float | None,
     ):
@@ -554,7 +559,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 and_(
                     models.FitbitDailyActivity.date <= up_to_date,
                     models.FitbitUser.oauth_userid == fitbit_userid,
-                    models.FitbitDailyActivity.type_id == type_id,
+                    models.FitbitDailyActivity.type_id == primary_type_id,
                 )
             )
             .order_by(desc(models.FitbitDailyActivity.date))
