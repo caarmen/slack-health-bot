@@ -118,7 +118,8 @@ class LocalFitbitRepository(ABC):
     async def get_latest_daily_activity_by_user_and_activity_type(
         self,
         fitbit_userid: str,
-        type_id: int,
+        primary_type_id: int,
+        secondary_type_id: int | None = None,
         before: datetime.date | None = None,
     ) -> DailyActivityStats | None:
         """
@@ -128,11 +129,12 @@ class LocalFitbitRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_daily_activity_streak_days_count_for_user_and_activity_type(
+    async def get_daily_activity_streak_days_count_for_user_and_activity_type(  # noqa: PLR0913
         self,
         fitbit_userid: str,
-        type_id: int,
+        primary_type_id: int,
         *,
+        secondary_type_id: int | None = None,
         before: datetime.date | None = None,
         min_distance_km: float | None = None,
         days_without_activies_break_streak=True,

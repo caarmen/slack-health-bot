@@ -35,7 +35,7 @@ fitbit:
         - out_of_zone_minutes
       daily_goals:
         # distance_km: 1.0
-      # Possible options for streak_mode (defaut is strict):
+      # Possible options for streak.mode (defaut is strict):
       #
       # - strict: the streak is the number of consecutive days, up to and including today,
       #   for which an activity was logged and any daily_goals were met.
@@ -47,7 +47,8 @@ fitbit:
       #   which didn't meet the daily_goals, or from the beginning of the history if no
       #   days were logged which didn't meet the daily_goals.
       #   Days with no logged activity are ignored.
-      streak_mode: strict
+      streak:
+        mode: strict
       # Send a motivational message when the streak is extended, every X days.
       ai_motivational_message_frequency_days: 10
 
@@ -76,6 +77,9 @@ fitbit:
              - distance
           daily_goals:
             distance_km: 20.0
+          streak:
+            mode: lax
+            secondary_activity_type_id: 90013
 
       - name: Spinning
         id: 55001
