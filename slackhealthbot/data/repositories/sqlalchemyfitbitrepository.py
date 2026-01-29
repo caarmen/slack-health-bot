@@ -372,26 +372,28 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         days_without_activies_break_streak=True,
     ) -> int:
         activity_date = before if before else datetime.date.today()
-        before_date_daily_activity: models.FitbitDailyActivity = (
-            await self.db.scalars(
-                statement=select(models.FitbitDailyActivity)
-                .join(models.FitbitUser)
-                .join(models.User)
-                .where(
-                    and_(
-                        models.FitbitDailyActivity.date == activity_date,
-                        models.FitbitUser.oauth_userid == fitbit_userid,
-                        models.FitbitDailyActivity.type_id == primary_type_id,
-                    )
+        activity_type_ids = [primary_type_id]
+        if secondary_type_id is not None:
+            activity_type_ids.append(secondary_type_id)
+        statement = (
+            select(func.sum(models.FitbitDailyActivity.sum_distance_km))
+            .join(models.FitbitUser)
+            .join(models.User)
+            .where(
+                and_(
+                    models.FitbitDailyActivity.date == activity_date,
+                    models.FitbitUser.oauth_userid == fitbit_userid,
+                    models.FitbitDailyActivity.type_id.in_(activity_type_ids),
                 )
-                .order_by(desc(models.FitbitDailyActivity.date))
             )
-        ).first()
+            .order_by(desc(models.FitbitDailyActivity.date))
+        )
+
+        total_distance = (await self.db.execute(statement)).scalar()
 
         # If the goal wasn't met today, we're not in a streak. Return 0.
-        if not before_date_daily_activity or (
-            min_distance_km is not None
-            and before_date_daily_activity.sum_distance_km < min_distance_km
+        if not total_distance or (
+            min_distance_km is not None and total_distance < min_distance_km
         ):
             return 0
 
