@@ -288,11 +288,11 @@ fitbit:
             mode: lax
             secondary_activity_type_id: 90013
           daily_goals:
-            distance_km: 12
+            distance_km: 16
 """,
         mock_openai_response=None,
         expected_activity_message="""New daily Treadmill activity from <@jdoe>:
-    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 Goal reached! 👍 3 day streak! 👏""",
+    • Distance: 15.000 km ⬆️ New record (last 180 days)! 🏆 3 day streak! 👏""",
     ),
 ]
 
@@ -373,7 +373,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
 
     # Top stats for yesterday.
     # - 200 calories
-    # - 10km treadmill + 2.1km walking
+    # - 10km treadmill + 8.1 walking
     # - 11 minutes total
     # - 9 minutes cardio
     fitbit_activity_factory.create(
@@ -404,7 +404,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fitbit_user_id=user.fitbit.id,
         type_id=secondary_activity_type,
         calories=30,
-        distance_km=2.1,
+        distance_km=8.1,
         total_minutes=20,
         cardio_minutes=None,
         fat_burn_minutes=None,
@@ -415,7 +415,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
 
     # Stats for today
     # - 250 calories
-    # - 15km
+    # - 15km treadmill + 2.1km walking
     # - 15 minutes total
     # - 12 minutes cardio
     fitbit_activity_factory.create(
@@ -437,6 +437,18 @@ async def test_process_daily_activities(  # noqa: PLR0913
         distance_km=4.9,
         total_minutes=12,
         cardio_minutes=10,
+        fat_burn_minutes=None,
+        peak_minutes=None,
+        out_of_zone_minutes=None,
+        updated_at=today,
+    )
+    fitbit_activity_factory.create(
+        fitbit_user_id=user.fitbit.id,
+        type_id=secondary_activity_type,
+        calories=30,
+        distance_km=2.1,
+        total_minutes=20,
+        cardio_minutes=None,
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
