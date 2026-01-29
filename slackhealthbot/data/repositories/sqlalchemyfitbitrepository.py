@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from sqlalchemy import and_, case, desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +22,8 @@ from slackhealthbot.domain.models.activity import (
     TopDailyActivityStats,
 )
 from slackhealthbot.domain.models.sleep import SleepData
+
+logger = logging.getLogger(__name__)
 
 
 class SQLAlchemyFitbitRepository(LocalFitbitRepository):
@@ -417,6 +420,9 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         up_to_date: datetime.date,
         min_distance_km: float | None,
     ):
+        logger.info(
+            f"Calculate streak strict mode for {fitbit_userid}, primary {primary_type_id}, secondary {secondary_type_id}, up to date {up_to_date}, min distance km {min_distance_km}"
+        )
         today_filters = []
         yesterday_filters = []
         yesterday_activity_alias = aliased(models.FitbitDailyActivity)
@@ -533,6 +539,9 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         up_to_date: datetime.date,
         min_distance_km: float | None,
     ):
+        logger.info(
+            f"Calculate streak lax mode for {fitbit_userid}, primary {primary_type_id}, secondary {secondary_type_id}, up to date {up_to_date}, min distance km {min_distance_km}"
+        )
         # Filter on rows with either the primary or secondary type id
         type_ids_filter = [primary_type_id]
         if secondary_type_id is not None:
