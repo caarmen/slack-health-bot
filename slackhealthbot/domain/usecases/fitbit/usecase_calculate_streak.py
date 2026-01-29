@@ -37,9 +37,6 @@ async def do(
     goal_distance_km = (
         report_settings.daily_goals.distance_km if report_settings.daily_goals else None
     )
-    # If we have a goal and we didn't meet it at the given date, there's no streak: return None.
-    if goal_distance_km and daily_activity.sum_distance_km < goal_distance_km:
-        return None
 
     # Return the number of days since the first day in the streak, including the given end_date.
     return await local_fitbit_repo.get_daily_activity_streak_days_count_for_user_and_activity_type(
