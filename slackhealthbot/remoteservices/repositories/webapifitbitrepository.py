@@ -12,7 +12,10 @@ from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
 from slackhealthbot.remoteservices.api.fitbit import activityapi, sleepapi, subscribeapi
-from slackhealthbot.remoteservices.api.fitbit.activityapi import FitbitActivities
+from slackhealthbot.remoteservices.api.fitbit.activityapi import (
+    FitbitActivities,
+    FitbitActivity,
+)
 from slackhealthbot.remoteservices.api.fitbit.sleepapi import FitbitSleep
 from slackhealthbot.settings import Settings
 
@@ -49,6 +52,16 @@ class WebApiFitbitRepository(RemoteFitbitRepository):
             settings=self.settings,
         )
         return remote_service_activity_to_domain_activity(activities)
+
+    async def get_activities_for_date(
+        self, oauth_fields: OAuthFields, when: datetime.date
+    ) -> list[tuple[str, ActivityData]]:
+        activities: FitbitActivities | None = await activityapi.get_activities_for_date(
+            oauth_token=oauth_fields,
+            when=when,
+            settings=self.settings,
+        )
+        return remote_service_activities_to_domain_activities(activities)
 
     def parse_oauth_fields(
         self,
@@ -100,7 +113,26 @@ def remote_service_activity_to_domain_activity(
     if not remote or not remote.activities:
         return None
     fitbit_activity = remote.activities[0]
-    return fitbit_activity.activityName, ActivityData(
+    return fitbit_activity.activityName, _remote_activity_to_domain_activity(
+        fitbit_activity
+    )
+
+
+def remote_service_activities_to_domain_activities(
+    remote: FitbitActivities | None,
+) -> list[tuple[str, ActivityData]]:
+    if not remote or not remote.activities:
+        return []
+    return [
+        (activity.activityName, _remote_activity_to_domain_activity(activity))
+        for activity in remote.activities
+    ]
+
+
+def _remote_activity_to_domain_activity(
+    fitbit_activity: FitbitActivity,
+) -> ActivityData:
+    return ActivityData(
         log_id=fitbit_activity.logId,
         type_id=fitbit_activity.activityTypeId,
         calories=fitbit_activity.calories,
