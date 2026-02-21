@@ -11,7 +11,10 @@ from slackhealthbot.domain.models.activity import (
     ActivityZoneMinutes,
     TopActivityStats,
 )
-from slackhealthbot.domain.usecases.slack import usecase_post_activity
+from slackhealthbot.domain.usecases.slack import (
+    usecase_activity_message_formatter,
+    usecase_post_activity,
+)
 from slackhealthbot.main import app
 from slackhealthbot.settings import AppSettings, SecretSettings, Settings
 
@@ -35,7 +38,9 @@ def test_get_activity_minutes_change_icon(
     input_value: int,
     expected_output: str,
 ):
-    actual_output = usecase_post_activity.get_activity_minutes_change_icon(input_value)
+    actual_output = usecase_activity_message_formatter.get_activity_minutes_change_icon(
+        input_value
+    )
     assert actual_output == expected_output
 
 
@@ -58,7 +63,11 @@ def test_get_activity_calories_change_icon(
     input_value: int,
     expected_output: str,
 ):
-    actual_output = usecase_post_activity.get_activity_calories_change_icon(input_value)
+    actual_output = (
+        usecase_activity_message_formatter.get_activity_calories_change_icon(
+            input_value
+        )
+    )
     assert actual_output == expected_output
 
 
@@ -81,8 +90,10 @@ def test_get_activity_distance_km_change_icon(
     input_value: int,
     expected_output: str,
 ):
-    actual_output = usecase_post_activity.get_activity_distance_km_change_icon(
-        distance_km_change_pct=input_value
+    actual_output = (
+        usecase_activity_message_formatter.get_activity_distance_km_change_icon(
+            distance_km_change_pct=input_value
+        )
     )
     assert actual_output == expected_output
 
@@ -142,8 +153,8 @@ CREATE_MESSAGE_SCENARIOS = [
                 ),
             ],
         ),
-        expected_message_regex="^.* ⬆️ New all-time record! 🏆.* ⬆️ New all-time record! 🏆.* ⬆️ New all-time record! "
-        "🏆.* ⬆️ New all-time record! 🏆.* ⬆️ New all-time record! 🏆$",
+        expected_message_regex="^.* New all-time record! 🏆.* New all-time record! 🏆.* New all-time record! "
+        "🏆.* New all-time record! 🏆.* New all-time record! 🏆$",
     ),
     CreateMessageScenario(
         name="recent top record",
@@ -164,8 +175,8 @@ CREATE_MESSAGE_SCENARIOS = [
                 ),
             ],
         ),
-        expected_message_regex="^.* ⬆️ New record \\(last 30 days\\)! 🏆.* ➡️ New record \\(last 30 days\\)! 🏆.* ➡️ New record \\(last 30 days\\)! 🏆.* ⬆️ New "
-        "record \\(last 30 days\\)! 🏆.* ➡️ New record \\(last 30 days\\)! 🏆$",
+        expected_message_regex="^.* New record \\(last 30 days\\)! 🏆.* New record \\(last 30 days\\)! 🏆.* New record \\(last 30 days\\)! 🏆.* New "
+        "record \\(last 30 days\\)! 🏆.* New record \\(last 30 days\\)! 🏆$",
     ),
     CreateMessageScenario(
         name="lowest score",
@@ -186,7 +197,7 @@ CREATE_MESSAGE_SCENARIOS = [
                 ),
             ],
         ),
-        expected_message_regex="^.* ⬇️ .* ⬇️ .* ⬇️ .* ⬇️ .* ⬇️ $",
+        expected_message_regex=r"^((?!🏆).)*$",
     ),
 ]
 
@@ -199,23 +210,6 @@ CREATE_MESSAGE_SCENARIOS = [
 def test_create_message(scenario: CreateMessageScenario):
     activity_history = ActivityHistory(
         new_activity_data=scenario.new_activity_data,
-        latest_activity_data=ActivityData(
-            log_id=-1,
-            type_id=123,
-            total_minutes=15,
-            calories=150,
-            distance_km=7.3,
-            zone_minutes=[
-                ActivityZoneMinutes(
-                    zone=ActivityZone.CARDIO,
-                    minutes=15,
-                ),
-                ActivityZoneMinutes(
-                    zone=ActivityZone.FAT_BURN,
-                    minutes=24,
-                ),
-            ],
-        ),
         all_time_top_activity_data=TopActivityStats(
             top_total_minutes=100,
             top_calories=215,
@@ -269,11 +263,11 @@ CREATE_MESSAGE_REPORT_FIELDS_SCENARIOS = [
         custom_conf=None,
         expected_message="""
 New Dancing activity from <@somebody>:
-    • Duration: 90 minutes ⬆️ New record (last 30 days)! 🏆
-    • Calories: 175 ➡️ New record (last 30 days)! 🏆
-    • Distance: 8.100 km ➡️ New record (last 30 days)! 🏆
-    • Cardio minutes: 50 ⬆️ New record (last 30 days)! 🏆
-    • Fat burn minutes: 25 ➡️ New record (last 30 days)! 🏆""",
+    • Duration: 90 minutes New record (last 30 days)! 🏆
+    • Calories: 175 New record (last 30 days)! 🏆
+    • Distance: 8.100 km New record (last 30 days)! 🏆
+    • Cardio minutes: 50 New record (last 30 days)! 🏆
+    • Fat burn minutes: 25 New record (last 30 days)! 🏆""",
     ),
     CreateMessageReportFieldsScenario(
         name="distance only",
@@ -291,7 +285,7 @@ fitbit:
 """,
         expected_message="""
 New Dancing activity from <@somebody>:
-    • Distance: 8.100 km ➡️ New record (last 30 days)! 🏆
+    • Distance: 8.100 km New record (last 30 days)! 🏆
 """,
     ),
     CreateMessageReportFieldsScenario(
@@ -305,11 +299,11 @@ fitbit:
 """,
         expected_message="""
 New Dancing activity from <@somebody>:
-    • Duration: 90 minutes ⬆️ New record (last 30 days)! 🏆
-    • Calories: 175 ➡️ New record (last 30 days)! 🏆
-    • Distance: 8.100 km ➡️ New record (last 30 days)! 🏆
-    • Cardio minutes: 50 ⬆️ New record (last 30 days)! 🏆
-    • Fat burn minutes: 25 ➡️ New record (last 30 days)! 🏆""",
+    • Duration: 90 minutes New record (last 30 days)! 🏆
+    • Calories: 175 New record (last 30 days)! 🏆
+    • Distance: 8.100 km New record (last 30 days)! 🏆
+    • Cardio minutes: 50 New record (last 30 days)! 🏆
+    • Fat burn minutes: 25 New record (last 30 days)! 🏆""",
     ),
 ]
 
@@ -354,23 +348,6 @@ def test_create_message_report_fields(
     )
     activity_history = ActivityHistory(
         new_activity_data=new_activity_data,
-        latest_activity_data=ActivityData(
-            log_id=-1,
-            type_id=123,
-            total_minutes=15,
-            calories=150,
-            distance_km=7.3,
-            zone_minutes=[
-                ActivityZoneMinutes(
-                    zone=ActivityZone.CARDIO,
-                    minutes=15,
-                ),
-                ActivityZoneMinutes(
-                    zone=ActivityZone.FAT_BURN,
-                    minutes=24,
-                ),
-            ],
-        ),
         all_time_top_activity_data=TopActivityStats(
             top_total_minutes=100,
             top_calories=215,

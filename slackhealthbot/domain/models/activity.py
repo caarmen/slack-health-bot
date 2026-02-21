@@ -36,7 +36,6 @@ class TopActivityStats:
 
 @dataclasses.dataclass
 class ActivityHistory:
-    latest_activity_data: ActivityData | None
     new_activity_data: ActivityData
     all_time_top_activity_data: TopActivityStats
     recent_top_activity_data: TopActivityStats

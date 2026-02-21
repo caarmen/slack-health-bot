@@ -357,8 +357,8 @@ activity_scenarios: dict[str, FitbitActivityScenario] = {
         expected_new_last_activity_log_id=1235,
         expected_new_activity_created=True,
         expected_message_pattern=(
-            "New Spinning activity.*⬇️ New record.*⬆️ New all-time record.*Fat burn.*8.*➡.*New all-time "
-            "record.*Cardio.*9.*↘️ New record"
+            "New Spinning activity.*New record.*New all-time record.*Fat burn.*8.*New all-time "
+            "record.*Cardio.*9.*New record"
         ),
     ),
     "New Spinning activity, full zones": FitbitActivityScenario(
@@ -406,8 +406,8 @@ activity_scenarios: dict[str, FitbitActivityScenario] = {
         },
         expected_new_last_activity_log_id=1235,
         expected_new_activity_created=True,
-        expected_message_pattern="New Spinning activity.*↗️ New all-time record.*➡️ New all-time record.*"
-        + "Fat burn.*12.*⬆️ New all-time record.*Cardio.*9.*⬇️ New record.*Out of zone.*10.*↗️.*Peak.*11.*⬆️ New "
+        expected_message_pattern="New Spinning activity.*New all-time record.*New all-time record.*"
+        + "Fat burn.*12.*New all-time record.*Cardio.*9.*New record.*Out of zone.*10.*Peak.*11.*New "
         "all-time record",
     ),
     "New Walking activity, previous walking without km": FitbitActivityScenario(
@@ -458,9 +458,9 @@ activity_scenarios: dict[str, FitbitActivityScenario] = {
         },
         expected_new_last_activity_log_id=1235,
         expected_new_activity_created=True,
-        expected_message_pattern="New Walking activity.*Duration.*↗️ New all-time record"
-        + ".*Calories.*76.*➡️ New all-time record.*Distance: 1.120 km  New all-time record.*"
-        + "Fat burn.*12.*⬆️ New all-time record.*Cardio.*9.*⬇️ New record.*Out of zone.*10.*↗️.*Peak.*11.*⬆️ New "
+        expected_message_pattern="New Walking activity.*Duration.*New all-time record"
+        + ".*Calories.*76.*New all-time record.*Distance: 1.120 km New all-time record.*"
+        + "Fat burn.*12.*New all-time record.*Cardio.*9.*New record.*Out of zone.*10.*Peak.*11.*New "
         "all-time record",
     ),
     "New Walking activity, previous walking with km": FitbitActivityScenario(
@@ -511,9 +511,9 @@ activity_scenarios: dict[str, FitbitActivityScenario] = {
         },
         expected_new_last_activity_log_id=1235,
         expected_new_activity_created=True,
-        expected_message_pattern="New Walking activity.*Duration.*↗️ New all-time record"
-        + ".*Calories.*76.*➡️ New all-time record.*Distance: 1.120 km.*⬆️ New all-time record.*"
-        + "Fat burn.*12.*⬆️ New all-time record.*Cardio.*9.*⬇️ New record.*Out of zone.*10.*↗️.*Peak.*11.*⬆️ New "
+        expected_message_pattern="New Walking activity.*Duration.*New all-time record"
+        + ".*Calories.*76.*New all-time record.*Distance: 1.120 km.*New all-time record.*"
+        + "Fat burn.*12.*New all-time record.*Cardio.*9.*New record.*Out of zone.*10.*Peak.*11.*New "
         "all-time record",
     ),
     "New unrecognized activity": FitbitActivityScenario(
@@ -668,8 +668,8 @@ activity_scenarios: dict[str, FitbitActivityScenario] = {
         expected_new_last_activity_log_id=1235,
         expected_new_activity_created=True,
         expected_message_pattern=(
-            "New Spinning activity.*⬇️ New record.*⬆️ New all-time record.*Fat burn.*8.*➡.*New all-time "
-            "record.*Cardio.*9.*↘️ New record"
+            "New Spinning activity.*New record.*New all-time record.*Fat burn.*8.*New all-time "
+            "record.*Cardio.*9.*New record"
         ),
         settings_override={
             "app_settings.fitbit.activities.activity_types": [

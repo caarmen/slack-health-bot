@@ -7,9 +7,6 @@ from slackhealthbot.domain.remoterepository.remoteslackrepository import (
 )
 from slackhealthbot.domain.usecases.slack.usecase_activity_message_formatter import (
     format_activity_zone,
-    get_activity_calories_change_icon,
-    get_activity_distance_km_change_icon,
-    get_activity_minutes_change_icon,
     get_ranking_text,
 )
 from slackhealthbot.settings import ReportField, Settings
@@ -38,45 +35,7 @@ def create_message(
     settings: Settings = Provide[Container.settings],
 ):
     activity = activity_history.new_activity_data
-    zone_icons = {}
     zone_record_texts = {}
-    if activity_history.latest_activity_data:
-        duration_icon = get_activity_minutes_change_icon(
-            activity.total_minutes
-            - activity_history.latest_activity_data.total_minutes,
-        )
-        calories_icon = get_activity_calories_change_icon(
-            activity.calories - activity_history.latest_activity_data.calories,
-        )
-        distance_km_icon = (
-            get_activity_distance_km_change_icon(
-                (
-                    activity.distance_km
-                    - activity_history.latest_activity_data.distance_km
-                )
-                * 100
-                / activity.distance_km,
-            )
-            if activity.distance_km
-            and activity_history.latest_activity_data.distance_km
-            else ""
-        )
-
-        for zone_minutes in activity.zone_minutes:
-            last_zone_minutes = next(
-                (
-                    x.minutes
-                    for x in activity_history.latest_activity_data.zone_minutes
-                    if x.zone == zone_minutes.zone
-                ),
-                0,
-            )
-            zone_icons[zone_minutes.zone] = get_activity_minutes_change_icon(
-                zone_minutes.minutes - last_zone_minutes
-            )
-
-    else:
-        duration_icon = calories_icon = distance_km_icon = ""
     duration_record_text = get_ranking_text(
         activity.total_minutes,
         activity_history.all_time_top_activity_data.top_total_minutes,
@@ -132,22 +91,25 @@ New {activity_name} activity from <@{slack_alias}>:
 """
 
     if ReportField.duration in report_settings.fields:
-        message += f"""    • Duration: {activity.total_minutes} minutes {duration_icon} {duration_record_text}
+        message += f"""    • Duration: {activity.total_minutes} minutes {duration_record_text}
 """
 
     if ReportField.calories in report_settings.fields:
-        message += f"""    • Calories: {activity.calories} {calories_icon} {calories_record_text}
+        message += f"""    • Calories: {activity.calories} {calories_record_text}
 """
 
     if ReportField.distance in report_settings.fields and activity.distance_km:
-        message += f"""    • Distance: {activity.distance_km:.3f} km {distance_km_icon} {distance_km_record_text}
+        message += f"""    • Distance: {activity.distance_km:.3f} km {distance_km_record_text}
 """
     message += "\n".join(
         [
             f"    • {format_activity_zone(zone_minutes.zone)}"
-            + f" minutes: {zone_minutes.minutes} "
-            + zone_icons.get(zone_minutes.zone, "")
-            + f" {zone_record_texts.get(zone_minutes.zone, '')}"
+            + f" minutes: {zone_minutes.minutes}"
+            + (
+                f" {zone_record_texts.get(zone_minutes.zone, '')}"
+                if zone_record_texts.get(zone_minutes.zone)
+                else ""
+            )
             for zone_minutes in activity.zone_minutes
             if f"{zone_minutes.zone}_minutes" in report_settings.fields
         ]
