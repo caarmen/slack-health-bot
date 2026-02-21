@@ -83,6 +83,17 @@ class LocalFitbitRepository(ABC):
         pass
 
     @abstractmethod
+    async def upsert_activity_for_user(
+        self,
+        fitbit_userid: str,
+        activity: ActivityData,
+    ) -> bool:
+        """
+        :return: True if a new activity was created, False if an existing activity was updated.
+        """
+        pass
+
+    @abstractmethod
     async def update_sleep_for_user(
         self,
         fitbit_userid: str,
