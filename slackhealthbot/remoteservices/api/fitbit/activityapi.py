@@ -30,6 +30,7 @@ class FitbitActivity(BaseModel):
     duration: int
     distance: float | None = None
     distanceUnit: str | None = None
+    startTime: str | None = None
 
 
 class FitbitActivities(BaseModel):
@@ -69,3 +70,57 @@ async def get_activity(
             f"Error parsing activity: error {e}, input: {input}", exc_info=e
         )
         return None
+
+
+async def get_activities_for_date(
+    oauth_token: OAuthFields,
+    when: datetime.date,
+    settings: Settings,
+) -> FitbitActivities | None:
+    """
+    :raises:
+        UserLoggedOutException if the refresh token request fails
+    """
+    logging.info("get_activities_for_date for user")
+    start_date_str = when.strftime("%Y-%m-%d")
+    response = await requests.get(
+        provider=settings.fitbit_oauth_settings.name,
+        token=oauth_token,
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
+        params={
+            "afterDate": start_date_str,
+            "sort": "asc",
+            "offset": 0,
+            "limit": 100,
+        },
+    )
+    try:
+        activities = FitbitActivities.parse(response.content)
+        return _filter_activities_for_date(activities, when)
+    except Exception as e:
+        logging.warning(
+            f"Error parsing activity list: error {e}, input: {input}", exc_info=e
+        )
+        return None
+
+
+def _filter_activities_for_date(
+    activities: FitbitActivities,
+    when: datetime.date,
+) -> FitbitActivities:
+    filtered: list[FitbitActivity] = []
+    for activity in activities.activities:
+        if activity.startTime:
+            try:
+                activity_date = datetime.date.fromisoformat(
+                    activity.startTime.split("T")[0]
+                )
+            except ValueError:
+                activity_date = None
+            if activity_date is not None:
+                if activity_date > when:
+                    break
+                if activity_date < when:
+                    continue
+        filtered.append(activity)
+    return FitbitActivities(activities=filtered)

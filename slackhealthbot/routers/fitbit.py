@@ -125,7 +125,7 @@ async def fitbit_notification_webhook(
                 elif notification.collectionType == "activities":
                     activity_history = await usecase_process_new_activity.do(
                         fitbit_userid=notification.ownerId,
-                        when=datetime.datetime.now(),
+                        when=notification.date or datetime.date.today(),
                     )
                     if activity_history:
                         _mark_fitbit_notification_processed(notification)

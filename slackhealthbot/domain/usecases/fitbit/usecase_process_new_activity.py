@@ -12,7 +12,9 @@ from slackhealthbot.domain.models.activity import (
     ActivityHistory,
     TopActivityStats,
 )
-from slackhealthbot.domain.usecases.fitbit import usecase_get_last_activity
+from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
+    RemoteFitbitRepository,
+)
 from slackhealthbot.domain.usecases.slack import usecase_post_activity
 from slackhealthbot.settings import Settings
 
@@ -20,89 +22,78 @@ from slackhealthbot.settings import Settings
 @inject
 async def do(  # noqa: PLR0913 deal with this later
     fitbit_userid: str,
-    when: datetime.datetime,
+    when: datetime.date,
     settings: Settings = Provide[Container.settings],
     local_fitbit_repo: LocalFitbitRepository = Provide[
         Container.local_fitbit_repository
     ],
-) -> ActivityData | None:
+    remote_fitbit_repo: RemoteFitbitRepository = Provide[
+        Container.remote_fitbit_repository
+    ],
+) -> list[ActivityData]:
     user_identity: UserIdentity = (
         await local_fitbit_repo.get_user_identity_by_fitbit_userid(
             fitbit_userid=fitbit_userid,
         )
     )
-    new_activity = await usecase_get_last_activity.do(
-        local_repo=local_fitbit_repo,
+    user = await local_fitbit_repo.get_user_by_fitbit_userid(
         fitbit_userid=fitbit_userid,
+    )
+    activities = await remote_fitbit_repo.get_activities_for_date(
+        oauth_fields=user.oauth_data,
         when=when,
     )
-    if not new_activity:
-        return None
+    if not activities:
+        return []
 
-    activity_name, new_activity_data = new_activity
+    now = datetime.datetime.now(datetime.timezone.utc)
+    report_history_days = settings.app_settings.fitbit.activities.history_days
+    recent_since = now - datetime.timedelta(days=report_history_days)
+    processed_activities: list[ActivityData] = []
 
-    if not await _is_new_valid_activity(
-        local_fitbit_repo,
-        fitbit_userid=fitbit_userid,
-        type_id=new_activity_data.type_id,
-        log_id=new_activity_data.log_id,
-        settings=settings,
-    ):
-        return None
+    for activity_name, new_activity_data in activities:
+        if not settings.app_settings.fitbit.activities.get_activity_type(
+            id=new_activity_data.type_id
+        ):
+            continue
 
-    await local_fitbit_repo.create_activity_for_user(
-        fitbit_userid=fitbit_userid,
-        activity=new_activity_data,
-    )
-
-    report = settings.app_settings.fitbit.activities.get_report(
-        activity_type_id=new_activity_data.type_id
-    )
-    if report is None or not report.realtime:
-        # This activity isn't to be posted in realtime to slack.
-        # We're done for now.
-        return
-
-    all_time_top_activity_stats: TopActivityStats = (
-        await local_fitbit_repo.get_top_activity_stats_by_user_and_activity_type(
+        created = await local_fitbit_repo.upsert_activity_for_user(
             fitbit_userid=fitbit_userid,
-            type_id=new_activity_data.type_id,
+            activity=new_activity_data,
         )
-    )
-    recent_top_activity_stats: TopActivityStats = (
-        await local_fitbit_repo.get_top_activity_stats_by_user_and_activity_type(
-            fitbit_userid=fitbit_userid,
-            type_id=new_activity_data.type_id,
-            since=datetime.datetime.now(datetime.timezone.utc)
-            - datetime.timedelta(
-                days=settings.app_settings.fitbit.activities.history_days
+        if not created:
+            continue
+
+        report = settings.app_settings.fitbit.activities.get_report(
+            activity_type_id=new_activity_data.type_id
+        )
+        if report is None or not report.realtime:
+            # This activity isn't to be posted in realtime to slack.
+            continue
+
+        all_time_top_activity_stats: TopActivityStats = (
+            await local_fitbit_repo.get_top_activity_stats_by_user_and_activity_type(
+                fitbit_userid=fitbit_userid,
+                type_id=new_activity_data.type_id,
+            )
+        )
+        recent_top_activity_stats: TopActivityStats = (
+            await local_fitbit_repo.get_top_activity_stats_by_user_and_activity_type(
+                fitbit_userid=fitbit_userid,
+                type_id=new_activity_data.type_id,
+                since=recent_since,
+            )
+        )
+        await usecase_post_activity.do(
+            slack_alias=user_identity.slack_alias,
+            activity_name=activity_name,
+            activity_history=ActivityHistory(
+                new_activity_data=new_activity_data,
+                all_time_top_activity_data=all_time_top_activity_stats,
+                recent_top_activity_data=recent_top_activity_stats,
             ),
+            record_history_days=report_history_days,
         )
-    )
-    await usecase_post_activity.do(
-        slack_alias=user_identity.slack_alias,
-        activity_name=activity_name,
-        activity_history=ActivityHistory(
-            new_activity_data=new_activity_data,
-            all_time_top_activity_data=all_time_top_activity_stats,
-            recent_top_activity_data=recent_top_activity_stats,
-        ),
-        record_history_days=settings.app_settings.fitbit.activities.history_days,
-    )
+        processed_activities.append(new_activity_data)
 
-    return new_activity_data
-
-
-async def _is_new_valid_activity(
-    repo: LocalFitbitRepository,
-    fitbit_userid: str,
-    type_id: int,
-    log_id: int,
-    settings: Settings,
-) -> bool:
-    return settings.app_settings.fitbit.activities.get_activity_type(
-        id=type_id
-    ) and not await repo.get_activity_by_user_and_log_id(
-        fitbit_userid=fitbit_userid,
-        log_id=log_id,
-    )
+    return processed_activities

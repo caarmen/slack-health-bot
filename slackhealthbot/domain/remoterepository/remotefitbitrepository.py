@@ -21,6 +21,12 @@ class RemoteFitbitRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_activities_for_date(
+        self, oauth_fields: OAuthFields, when: datetime.date
+    ) -> list[tuple[str, ActivityData]]:
+        pass
+
+    @abstractmethod
     async def get_sleep(
         self,
         oauth_fields: OAuthFields,

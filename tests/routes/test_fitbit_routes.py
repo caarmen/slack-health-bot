@@ -13,7 +13,7 @@ from slackhealthbot.data.database.models import FitbitUser, User
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
-from slackhealthbot.domain.models.activity import ActivityData
+from slackhealthbot.domain.models.activity import ActivityData, ActivityZone
 from slackhealthbot.settings import Settings
 from tests.testsupport.factories.factories import (
     FitbitActivityFactory,
@@ -238,3 +238,105 @@ def test_notification_unknown_user(
 
     # Then the webhook returns the expected error.
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_activity_notification_upserts_all_activities(
+    local_fitbit_repository: LocalFitbitRepository,
+    client: TestClient,
+    respx_mock: MockRouter,
+    fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
+    settings: Settings,
+):
+    """
+    Given a user with no activities for the day
+    When we receive a fitbit activity notification for that day
+    Then all activities returned by fitbit for that date are upserted
+    """
+    user_factory, fitbit_user_factory, _ = fitbit_factories
+
+    # Given a user with fitbit credentials
+    user: User = user_factory.create(fitbit=None)
+    fitbit_user: FitbitUser = fitbit_user_factory.create(
+        user_id=user.id,
+        oauth_expiration_date=datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(days=1),
+    )
+
+    # And fitbit returns multiple activities for the day
+    respx_mock.get(
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
+    ).mock(
+        Response(
+            status_code=200,
+            json={
+                "activities": [
+                    {
+                        "activeZoneMinutes": {"minutesInHeartRateZones": []},
+                        "activityName": "Spinning",
+                        "activityTypeId": 55001,
+                        "logId": 1001,
+                        "calories": 76,
+                        "duration": 665000,
+                    },
+                    {
+                        "activeZoneMinutes": {
+                            "minutesInHeartRateZones": [
+                                {
+                                    "minutes": 8,
+                                    "type": "FAT_BURN",
+                                },
+                                {
+                                    "minutes": 4,
+                                    "type": "CARDIO",
+                                },
+                            ]
+                        },
+                        "activityName": "Spinning",
+                        "activityTypeId": 55001,
+                        "logId": 1002,
+                        "calories": 90,
+                        "duration": 720000,
+                    },
+                ]
+            },
+        )
+    )
+
+    # And slack webhook is available
+    respx_mock.post(f"{settings.secret_settings.slack_webhook_url}").mock(
+        return_value=Response(200)
+    )
+
+    # When we receive a fitbit notification for activities
+    with client:
+        response = client.post(
+            "/fitbit-notification-webhook/",
+            content=json.dumps(
+                [
+                    {
+                        "ownerId": fitbit_user.oauth_userid,
+                        "date": "2023-05-12",
+                        "collectionType": "activities",
+                    }
+                ]
+            ),
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    # Then all activities are upserted
+    activity_1 = await local_fitbit_repository.get_activity_by_user_and_log_id(
+        fitbit_userid=fitbit_user.oauth_userid,
+        log_id=1001,
+    )
+    activity_2 = await local_fitbit_repository.get_activity_by_user_and_log_id(
+        fitbit_userid=fitbit_user.oauth_userid,
+        log_id=1002,
+    )
+
+    assert activity_1 is not None
+    assert activity_2 is not None
+    zone_minutes = {x.zone: x.minutes for x in activity_2.zone_minutes}
+    assert zone_minutes.get(ActivityZone.FAT_BURN) == 8  # noqa: PLR2004
+    assert zone_minutes.get(ActivityZone.CARDIO) == 4  # noqa: PLR2004

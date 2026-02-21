@@ -196,11 +196,11 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         ).one_or_none()
         return _db_activity_to_domain_activity(db_activity) if db_activity else None
 
-    async def create_activity_for_user(
+    async def upsert_activity_for_user(
         self,
         fitbit_userid: str,
         activity: ActivityData,
-    ):
+    ) -> bool:
         user: models.FitbitUser = (
             await self.db.scalars(
                 statement=select(models.FitbitUser).where(
@@ -208,17 +208,49 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 )
             )
         ).one_or_none()
+        if not user:
+            raise UnknownUserException
+
+        zone_minutes = {f"{zone.value}_minutes": None for zone in ActivityZone}
+        zone_minutes.update(
+            {f"{x.zone}_minutes": x.minutes for x in activity.zone_minutes}
+        )
+
+        db_activity: models.FitbitActivity | None = (
+            await self.db.scalars(
+                statement=select(models.FitbitActivity).where(
+                    models.FitbitActivity.log_id == activity.log_id
+                )
+            )
+        ).one_or_none()
+
+        if db_activity:
+            await self.db.execute(
+                statement=update(models.FitbitActivity)
+                .where(models.FitbitActivity.log_id == activity.log_id)
+                .values(
+                    type_id=activity.type_id,
+                    total_minutes=activity.total_minutes,
+                    calories=activity.calories,
+                    distance_km=activity.distance_km,
+                    **zone_minutes,
+                )
+            )
+            await self.db.commit()
+            return False
+
         fitbit_activity = models.FitbitActivity(
             log_id=activity.log_id,
             type_id=activity.type_id,
             total_minutes=activity.total_minutes,
             calories=activity.calories,
             distance_km=activity.distance_km,
-            **{f"{x.zone}_minutes": x.minutes for x in activity.zone_minutes},
+            **zone_minutes,
             fitbit_user_id=user.id,
         )
         self.db.add(fitbit_activity)
         await self.db.commit()
+        return True
 
     async def update_sleep_for_user(
         self,
