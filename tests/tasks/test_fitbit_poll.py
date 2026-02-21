@@ -279,3 +279,87 @@ async def test_schedule_fitbit_poll(  # noqa: PLR0913
         activity_scenario.expected_message_pattern, actual_activity_message
     )
     task.cancel()
+
+
+@pytest.mark.asyncio
+async def test_fitbit_poll_activity_upserts_all_activities(
+    local_fitbit_repository: LocalFitbitRepository,
+    respx_mock: MockRouter,
+    fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
+    client: TestClient,
+    settings: Settings,
+):
+    """
+    Given a user with no activities for the day
+    When we poll fitbit for that day
+    Then all activities returned by fitbit for that date are upserted
+    """
+    user_factory, fitbit_user_factory, _ = fitbit_factories
+
+    # Given a user with fitbit credentials
+    user: User = user_factory.create(fitbit=None)
+    fitbit_user: FitbitUser = fitbit_user_factory.create(
+        user_id=user.id,
+        oauth_expiration_date=datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(days=1),
+    )
+
+    # And fitbit returns no sleep data
+    respx_mock.get(
+        url=f"{settings.fitbit_oauth_settings.base_url}1.2/user/-/sleep/date/2023-01-23.json",
+    ).mock(Response(status_code=200, json={"sleep": []}))
+
+    # And fitbit returns multiple activities for the day
+    respx_mock.get(
+        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
+    ).mock(
+        Response(
+            status_code=200,
+            json={
+                "activities": [
+                    {
+                        "activeZoneMinutes": {"minutesInHeartRateZones": []},
+                        "activityName": "Spinning",
+                        "activityTypeId": 55001,
+                        "logId": 2001,
+                        "calories": 76,
+                        "duration": 665000,
+                    },
+                    {
+                        "activeZoneMinutes": {"minutesInHeartRateZones": []},
+                        "activityName": "Spinning",
+                        "activityTypeId": 55001,
+                        "logId": 2002,
+                        "calories": 90,
+                        "duration": 720000,
+                    },
+                ]
+            },
+        )
+    )
+
+    # And slack webhook is available
+    respx_mock.post(f"{settings.secret_settings.slack_webhook_url}").mock(
+        return_value=Response(200)
+    )
+
+    # When we poll for activities
+    with client:
+        await do_poll(
+            local_fitbit_repo=local_fitbit_repository,
+            cache=Cache(),
+            when=datetime.date(2023, 1, 23),
+        )
+
+    # Then all activities are upserted
+    activity_1 = await local_fitbit_repository.get_activity_by_user_and_log_id(
+        fitbit_userid=fitbit_user.oauth_userid,
+        log_id=2001,
+    )
+    activity_2 = await local_fitbit_repository.get_activity_by_user_and_log_id(
+        fitbit_userid=fitbit_user.oauth_userid,
+        log_id=2002,
+    )
+
+    assert activity_1 is not None
+    assert activity_2 is not None
