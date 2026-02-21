@@ -196,30 +196,6 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         ).one_or_none()
         return _db_activity_to_domain_activity(db_activity) if db_activity else None
 
-    async def create_activity_for_user(
-        self,
-        fitbit_userid: str,
-        activity: ActivityData,
-    ):
-        user: models.FitbitUser = (
-            await self.db.scalars(
-                statement=select(models.FitbitUser).where(
-                    models.FitbitUser.oauth_userid == fitbit_userid
-                )
-            )
-        ).one_or_none()
-        fitbit_activity = models.FitbitActivity(
-            log_id=activity.log_id,
-            type_id=activity.type_id,
-            total_minutes=activity.total_minutes,
-            calories=activity.calories,
-            distance_km=activity.distance_km,
-            **{f"{x.zone}_minutes": x.minutes for x in activity.zone_minutes},
-            fitbit_user_id=user.id,
-        )
-        self.db.add(fitbit_activity)
-        await self.db.commit()
-
     async def upsert_activity_for_user(
         self,
         fitbit_userid: str,

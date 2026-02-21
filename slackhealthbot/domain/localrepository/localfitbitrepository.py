@@ -75,14 +75,6 @@ class LocalFitbitRepository(ABC):
         pass
 
     @abstractmethod
-    async def create_activity_for_user(
-        self,
-        fitbit_userid: str,
-        activity: ActivityData,
-    ):
-        pass
-
-    @abstractmethod
     async def upsert_activity_for_user(
         self,
         fitbit_userid: str,
