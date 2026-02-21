@@ -106,7 +106,7 @@ async def fitbit_poll_activity(
     try:
         await usecase_process_new_activity.do(
             fitbit_userid=poll_target.user_identity.fitbit_userid,
-            when=datetime.datetime.now(),
+            when=poll_target.when,
         )
     except UserLoggedOutException:
         await handle_fail_poll(
