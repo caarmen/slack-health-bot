@@ -50,17 +50,6 @@ async def do(  # noqa: PLR0913 deal with this later
     ):
         return None
 
-    last_activity_data: ActivityData = (
-        # Look up the previous activity for this user and type
-        # before saving the new activity.
-        # Note: if this isn't a realtime activity type, this
-        # lookup won't be used. Maybe this can be improved.
-        await local_fitbit_repo.get_latest_activity_by_user_and_type(
-            fitbit_userid=fitbit_userid,
-            type_id=new_activity_data.type_id,
-        )
-    )
-
     await local_fitbit_repo.create_activity_for_user(
         fitbit_userid=fitbit_userid,
         activity=new_activity_data,
@@ -94,7 +83,6 @@ async def do(  # noqa: PLR0913 deal with this later
         slack_alias=user_identity.slack_alias,
         activity_name=activity_name,
         activity_history=ActivityHistory(
-            latest_activity_data=last_activity_data,
             new_activity_data=new_activity_data,
             all_time_top_activity_data=all_time_top_activity_stats,
             recent_top_activity_data=recent_top_activity_stats,
