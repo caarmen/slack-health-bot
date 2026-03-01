@@ -219,6 +219,8 @@ class SecretSettings(BaseSettings):
     session_secret_key: str = "".join(
         random.choice(string.ascii_lowercase) for _ in range(32)
     )
+    admin_username: str = "admin"
+    admin_password_hash: str | None = None
     model_config = SettingsConfigDict(env_file=".env")
 
 

@@ -8,6 +8,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from slackhealthbot import logger
+from slackhealthbot.admin.setup import init_admin
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth import (
     UpdateTokenUseCase as FitbitUpdateTokenUseCase,
@@ -44,6 +45,7 @@ async def lifespan(_app: FastAPI):
             activity_type_ids=set(daily_activity_type_ids),
             post_time=settings.app_settings.fitbit.activities.daily_report_time,
         )
+    init_admin(_app)
     yield
     if schedule_task:
         schedule_task.cancel()
