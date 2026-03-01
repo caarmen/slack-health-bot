@@ -1,5 +1,3 @@
-import random
-import string
 from asyncio import Task
 from contextlib import asynccontextmanager
 
@@ -53,20 +51,18 @@ async def lifespan(_app: FastAPI):
         daily_activity_task.cancel()
 
 
+container = Container()
+settings: Settings = container.settings.provided()
 app = FastAPI(
     middleware=[
         Middleware(CorrelationIdMiddleware),
         Middleware(
-            SessionMiddleware,
-            secret_key="".join(
-                random.choice(string.ascii_lowercase) for i in range(32)
-            ),
+            SessionMiddleware, secret_key=settings.secret_settings.session_secret_key
         ),
     ],
     lifespan=lifespan,
 )
 
-container = Container()
 app.container = container
 app.include_router(withings_router)
 app.include_router(fitbit_router)

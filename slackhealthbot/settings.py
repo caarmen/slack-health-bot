@@ -2,6 +2,8 @@ import dataclasses
 import datetime as dt
 import enum
 import os
+import random
+import string
 from copy import deepcopy
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -214,6 +216,9 @@ class SecretSettings(BaseSettings):
     fitbit_client_subscriber_verification_code: str
     slack_webhook_url: HttpUrl
     openai_api_key: str | None = None
+    session_secret_key: str = "".join(
+        random.choice(string.ascii_lowercase) for _ in range(32)
+    )
     model_config = SettingsConfigDict(env_file=".env")
 
 
