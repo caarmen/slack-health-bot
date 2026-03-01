@@ -23,6 +23,7 @@ Pushes messages to a pre-selected Slack channel, when users log new weight data 
 * [Optional] Create an [OpenAI](https://openai.com/api/) api key. This is used to periodically generate and post motivational messages to Slack for activity streaks.
 * Copy the `.env.template` file to `.env`, and modify the values.
 * [Optional]: Copy the `config/app-custom.yaml.template` file to `app-custom.yaml`, and override any values which are defined in `config/app-default.yaml`.
+* [Optional]: Generate a password to use with the admin interface: `docker run -it ghcr.io/caarmen/slack-health-bot python -m slackhealthbot.admin.hash_password`
 
 ## Retrieve the docker image
 

@@ -77,6 +77,8 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.routers.fitbit",
             "slackhealthbot.routers.withings",
             "slackhealthbot.tasks.fitbitpoll",
+            "slackhealthbot.admin.auth",
+            "slackhealthbot.admin.setup",
         ],
     )
 

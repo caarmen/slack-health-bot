@@ -1,5 +1,3 @@
-import random
-import string
 from asyncio import Task
 from contextlib import asynccontextmanager
 
@@ -10,6 +8,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from slackhealthbot import logger
+from slackhealthbot.admin.setup import init_admin
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth import (
     UpdateTokenUseCase as FitbitUpdateTokenUseCase,
@@ -46,6 +45,7 @@ async def lifespan(_app: FastAPI):
             activity_type_ids=set(daily_activity_type_ids),
             post_time=settings.app_settings.fitbit.activities.daily_report_time,
         )
+    init_admin(_app)
     yield
     if schedule_task:
         schedule_task.cancel()
@@ -53,20 +53,18 @@ async def lifespan(_app: FastAPI):
         daily_activity_task.cancel()
 
 
+container = Container()
+settings: Settings = container.settings.provided()
 app = FastAPI(
     middleware=[
         Middleware(CorrelationIdMiddleware),
         Middleware(
-            SessionMiddleware,
-            secret_key="".join(
-                random.choice(string.ascii_lowercase) for i in range(32)
-            ),
+            SessionMiddleware, secret_key=settings.secret_settings.session_secret_key
         ),
     ],
     lifespan=lifespan,
 )
 
-container = Container()
 app.container = container
 app.include_router(withings_router)
 app.include_router(fitbit_router)

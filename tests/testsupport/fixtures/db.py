@@ -21,7 +21,14 @@ def sqlalchemy_declarative_base():
 
 @pytest.fixture
 def db_path(tmp_path: Path) -> str:
-    return str(tmp_path / "database.db")
+    path = str(tmp_path / "database.db")
+    app_settings = app.container.app_settings.provided()
+    app_settings.database_path = Path(path)
+    settings = app.container.settings.provided()
+    settings.app_settings = app_settings
+
+    app.container.settings.override(settings)
+    return path
 
 
 @pytest.fixture
