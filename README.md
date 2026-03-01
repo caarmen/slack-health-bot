@@ -82,14 +82,8 @@ curl --location 'http://your-server/withings-notification-webhook/' \
     >
     > • Score: 96
 
-You can find your userid in the database file:
-```
-sqlite3 -header -column /path/to/slackhealthbot.db \
-  "select
-     slack_alias,
-     withings_users.oauth_userid as withings_userid,
-     fitbit_users.oauth_userid as fitbit_userid
-  from users
-    left outer join withings_users on users.id = withings_users.user_id
-    left outer join fitbit_users on users.id = fitbit_users.user_id;"
-```
+### Admin interface
+An admin interface is available to browse the data in the database, at http://your-server/admin
+
+The username ("admin" by default) and password hash are configured in the `.env` file.
+See the Configuration section above.
