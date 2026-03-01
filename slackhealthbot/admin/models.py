@@ -1,6 +1,7 @@
 from sqladmin import ModelView
-from sqladmin.filters import OperationColumnFilter
+from sqladmin.filters import OperationColumnFilter as BaseOperationColumnFilter
 from sqlalchemy.inspection import inspect
+from sqlalchemy.sql.sqltypes import Date, DateTime
 
 from slackhealthbot.data.database.models import (
     FitbitActivity,
@@ -9,6 +10,22 @@ from slackhealthbot.data.database.models import (
     User,
     WithingsUser,
 )
+
+
+class OperationColumnFilter(BaseOperationColumnFilter):
+    """
+    Override SQLAdmin's OperationColumnFilter, to make it possible
+    to filter with greater_than and less_than on date type fields.
+    """
+
+    def get_operation_options(self, column_obj):
+        if isinstance(column_obj.type, (Date, DateTime)):
+            return [
+                ("equals", "Equals"),
+                ("greater_than", "Greater than"),
+                ("less_than", "Less than"),
+            ]
+        return super().get_operation_options(column_obj)
 
 
 def user_formatter(obj: User) -> str:
