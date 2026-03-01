@@ -11,6 +11,18 @@ from slackhealthbot.data.database.models import (
 )
 
 
+def user_formatter(obj: User) -> str:
+    return f"{obj.id} - {obj.slack_alias}"
+
+
+def fitbit_user_formatter(obj: FitbitUser) -> str:
+    return obj.oauth_userid
+
+
+def withings_user_formatter(obj: WithingsUser) -> str:
+    return obj.oauth_userid
+
+
 def auto_admin(cls):
     """
     Class decorator for admin classes, configuring all model fields
@@ -21,6 +33,11 @@ def auto_admin(cls):
     columns = [c.key for c in mapper.column_attrs]
     cls.column_sortable_list = columns
     cls.column_filters = [OperationColumnFilter(c) for c in columns]
+    cls.column_type_formatters = {
+        User: user_formatter,
+        FitbitUser: fitbit_user_formatter,
+        WithingsUser: withings_user_formatter,
+    }
     return cls
 
 
