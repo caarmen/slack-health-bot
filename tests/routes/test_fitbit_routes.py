@@ -14,12 +14,14 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
 from slackhealthbot.domain.models.activity import ActivityData, ActivityZone
+from slackhealthbot.routers.fitbit import datetime as dt_to_freeze
 from slackhealthbot.settings import Settings
 from tests.testsupport.factories.factories import (
     FitbitActivityFactory,
     FitbitUserFactory,
     UserFactory,
 )
+from tests.testsupport.mock.builtins import freeze_time
 from tests.testsupport.testdata.fitbit_scenarios import (
     FitbitActivityScenario,
     FitbitSleepScenario,
@@ -165,13 +167,18 @@ async def test_activity_notification(  # noqa PLR0913
 
     # When we receive the callback from fitbit that a new activity is available
     with client:
+        freeze_time(
+            monkeypatch,
+            dt_module_to_freeze=dt_to_freeze,
+            frozen_datetime_args=(2023, 1, 23, 9, 0, 0),
+        )
         response = client.post(
             "/fitbit-notification-webhook/",
             content=json.dumps(
                 [
                     {
                         "ownerId": user.fitbit.oauth_userid,
-                        "date": "2023-05-12",
+                        "date": "2023-01-23",
                         "collectionType": "activities",
                     }
                 ]
@@ -275,6 +282,7 @@ async def test_activity_notification_upserts_all_activities(
                         "activeZoneMinutes": {"minutesInHeartRateZones": []},
                         "activityName": "Spinning",
                         "activityTypeId": 55001,
+                        "startTime": "2023-05-12T08:40:00.000+01:00",
                         "logId": 1001,
                         "calories": 76,
                         "duration": 665000,
@@ -294,6 +302,7 @@ async def test_activity_notification_upserts_all_activities(
                         },
                         "activityName": "Spinning",
                         "activityTypeId": 55001,
+                        "startTime": "2023-05-12T08:40:00.000+01:00",
                         "logId": 1002,
                         "calories": 90,
                         "duration": 720000,
