@@ -1,3 +1,4 @@
+import datetime as dt
 from factory import Faker, RelatedFactoryList, SelfAttribute, Sequence, SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
@@ -27,6 +28,11 @@ class FitbitActivityFactory(SQLAlchemyModelFactory):
 
     log_id = Faker("pyint")
     type_id = Faker("pyint")
+    logged_at = Faker(
+        "date_time_between",
+        start_date=dt.date.fromisoformat("1999-01-01"),
+        end_date=dt.date.fromisoformat("2019-01-01"),
+    )
     total_minutes = Faker("pyint")
     calories = Faker("pyint")
     distance_km = Faker("pyfloat")

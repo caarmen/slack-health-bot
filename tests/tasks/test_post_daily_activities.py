@@ -54,7 +54,7 @@ async def test_post_daily_activities(
         fat_burn_minutes=60,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=old_date,
+        logged_at=old_date,
     )
 
     # Top stats in the recent date.
@@ -68,7 +68,7 @@ async def test_post_daily_activities(
         fat_burn_minutes=45,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=recent_date,
+        logged_at=recent_date,
     )
 
     # Two days ago's stats
@@ -82,7 +82,7 @@ async def test_post_daily_activities(
         fat_burn_minutes=40,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=two_days_ago,
+        logged_at=two_days_ago,
     )
 
     # Today's stats
@@ -96,7 +96,7 @@ async def test_post_daily_activities(
         fat_burn_minutes=41,
         peak_minutes=1,
         out_of_zone_minutes=None,
-        updated_at=today,
+        logged_at=today,
     )
 
     # Mock an empty ok response from the slack webhook

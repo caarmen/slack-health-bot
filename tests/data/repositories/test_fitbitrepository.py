@@ -44,7 +44,7 @@ async def test_top_activities(
             fat_burn_minutes=17,
             cardio_minutes=16,
             peak_minutes=15,
-            updated_at=old_date,
+            logged_at=old_date,
         )
     )
 
@@ -59,7 +59,7 @@ async def test_top_activities(
             fat_burn_minutes=17,
             cardio_minutes=16,
             peak_minutes=15,
-            updated_at=recent_date,
+            logged_at=recent_date,
         )
     )
 
@@ -74,7 +74,7 @@ async def test_top_activities(
             fat_burn_minutes=29,
             cardio_minutes=28,
             peak_minutes=27,
-            updated_at=old_date,
+            logged_at=old_date,
         )
     )
 
@@ -88,7 +88,7 @@ async def test_top_activities(
         fat_burn_minutes=28,
         cardio_minutes=27,
         peak_minutes=26,
-        updated_at=recent_date,
+        logged_at=recent_date,
     )
 
     # Our user, but not top stats
@@ -101,7 +101,7 @@ async def test_top_activities(
         fat_burn_minutes=19,
         cardio_minutes=18,
         peak_minutes=17,
-        updated_at=recent_date,
+        logged_at=recent_date,
     )
 
     # Another user with higher stats
@@ -114,7 +114,7 @@ async def test_top_activities(
         fat_burn_minutes=68,
         cardio_minutes=67,
         peak_minutes=66,
-        updated_at=recent_date,
+        logged_at=recent_date,
     )
 
     # Our user, with higher stats for another activity type
@@ -127,7 +127,7 @@ async def test_top_activities(
         fat_burn_minutes=97,
         cardio_minutes=96,
         peak_minutes=95,
-        updated_at=recent_date,
+        logged_at=recent_date,
     )
 
     all_time_top_activity_stats: TopActivityStats = (
@@ -244,7 +244,7 @@ async def test_daily_activities_one_entry(
         cardio_minutes=18,
         peak_minutes=17,
         out_of_zone_minutes=None,
-        updated_at=datetime.datetime(2024, 1, 2, 23, 44, 55),
+        logged_at=datetime.datetime(2024, 1, 2, 23, 44, 55),
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -256,7 +256,7 @@ async def test_daily_activities_one_entry(
         cardio_minutes=17,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=datetime.datetime(2024, 1, 2, 23, 44, 55),
+        logged_at=datetime.datetime(2024, 1, 2, 23, 44, 55),
     )
 
     actual_daily_activity_stats: list[DailyActivityStats] = (
@@ -303,23 +303,23 @@ async def test_daily_activities_multiple_entries(
     fitbit_activity_factory.create(
         fitbit_user_id=user1.fitbit.id,
         type_id=1235,
-        updated_at=datetime.datetime(2024, 1, 2, 3, 3, 4),
+        logged_at=datetime.datetime(2024, 1, 2, 3, 3, 4),
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user1.fitbit.id,
         type_id=1235,
-        updated_at=datetime.datetime(2024, 1, 2, 4, 3, 4),
+        logged_at=datetime.datetime(2024, 1, 2, 4, 3, 4),
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user1.fitbit.id,
         type_id=1234,
-        updated_at=datetime.datetime(2024, 1, 2, 5, 3, 4),
+        logged_at=datetime.datetime(2024, 1, 2, 5, 3, 4),
     )
     # User 2:
     fitbit_activity_factory.create(
         fitbit_user_id=user2.fitbit.id,
         type_id=1234,
-        updated_at=datetime.datetime(2024, 1, 2, 5, 3, 4),
+        logged_at=datetime.datetime(2024, 1, 2, 5, 3, 4),
     )
 
     # Not matching entries:
@@ -327,18 +327,18 @@ async def test_daily_activities_multiple_entries(
     fitbit_activity_factory.create(
         fitbit_user_id=user1.fitbit.id,
         type_id=1234,
-        updated_at=datetime.datetime(2024, 1, 4, 1, 3, 3),
+        logged_at=datetime.datetime(2024, 1, 4, 1, 3, 3),
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user1.fitbit.id,
         type_id=1235,
-        updated_at=datetime.datetime(2024, 1, 4, 1, 2, 3),
+        logged_at=datetime.datetime(2024, 1, 4, 1, 2, 3),
     )
     # User 2:
     fitbit_activity_factory.create(
         fitbit_user_id=user2.fitbit.id,
         type_id=1235,
-        updated_at=datetime.datetime(2023, 12, 4, 1, 2, 3),
+        logged_at=datetime.datetime(2023, 12, 4, 1, 2, 3),
     )
 
     # Get the list of daily activity stats for all users and activity types
@@ -434,7 +434,7 @@ async def test_top_daily_activities(
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=old_date,
+        logged_at=old_date,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -446,7 +446,7 @@ async def test_top_daily_activities(
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=old_date,
+        logged_at=old_date,
     )
 
     # Top stats in the recent date.
@@ -464,7 +464,7 @@ async def test_top_daily_activities(
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=recent_date,
+        logged_at=recent_date,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -476,7 +476,7 @@ async def test_top_daily_activities(
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=recent_date,
+        logged_at=recent_date,
     )
 
     # Stats for today
@@ -494,7 +494,7 @@ async def test_top_daily_activities(
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=today,
+        logged_at=today,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -506,7 +506,7 @@ async def test_top_daily_activities(
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=today,
+        logged_at=today,
     )
 
     actual_top_daily_activities_all_time: TopDailyActivityStats = (

@@ -339,7 +339,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         type_id=activity_type,
         calories=10,
         distance_km=0.1,
-        updated_at=oldest_date,
+        logged_at=oldest_date,
     )
     # All-time top stats in the old date:
     # - 300 calories
@@ -356,7 +356,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=old_date,
+        logged_at=old_date,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -368,7 +368,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=old_date,
+        logged_at=old_date,
     )
 
     # Top stats for yesterday.
@@ -386,7 +386,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=yesterday,
+        logged_at=yesterday,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -398,7 +398,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=yesterday,
+        logged_at=yesterday,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -410,7 +410,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=yesterday,
+        logged_at=yesterday,
     )
 
     # Stats for today
@@ -428,7 +428,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=today,
+        logged_at=today,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -440,7 +440,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=today,
+        logged_at=today,
     )
     fitbit_activity_factory.create(
         fitbit_user_id=user.fitbit.id,
@@ -452,7 +452,7 @@ async def test_process_daily_activities(  # noqa: PLR0913
         fat_burn_minutes=None,
         peak_minutes=None,
         out_of_zone_minutes=None,
-        updated_at=today,
+        logged_at=today,
     )
 
     # Mock an empty ok response from the slack webhook
