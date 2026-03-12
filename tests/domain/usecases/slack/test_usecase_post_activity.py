@@ -1,4 +1,5 @@
 import dataclasses
+import datetime as dt
 import re
 from pathlib import Path
 
@@ -57,6 +58,7 @@ CREATE_MESSAGE_SCENARIOS = [
         new_activity_data=ActivityData(
             log_id=-3,
             type_id=123,
+            logged_at=dt.datetime(2024, 10, 20, 3, 2, 3),
             total_minutes=120,
             calories=315,
             distance_km=10.2,
@@ -79,6 +81,7 @@ CREATE_MESSAGE_SCENARIOS = [
         new_activity_data=ActivityData(
             log_id=-3,
             type_id=123,
+            logged_at=dt.datetime(2024, 10, 20, 3, 2, 1),
             total_minutes=90,
             calories=175,
             distance_km=8.1,
@@ -101,6 +104,7 @@ CREATE_MESSAGE_SCENARIOS = [
         new_activity_data=ActivityData(
             log_id=-3,
             type_id=123,
+            logged_at=dt.datetime(2024, 10, 20, 3, 2, 0),
             total_minutes=1,
             calories=1,
             distance_km=0.1,
@@ -250,6 +254,7 @@ def test_create_message_report_fields(
     new_activity_data = ActivityData(
         log_id=-3,
         type_id=123,
+        logged_at=dt.datetime(2023, 1, 23, 12, 13, 14),
         total_minutes=90,
         calories=175,
         distance_km=8.1,

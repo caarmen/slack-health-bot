@@ -64,6 +64,7 @@ class FitbitActivity(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     log_id: Mapped[int] = mapped_column(unique=True)
     type_id: Mapped[int] = mapped_column()
+    logged_at: Mapped[datetime] = mapped_column()
     total_minutes: Mapped[int] = mapped_column()
     calories: Mapped[int] = mapped_column()
     distance_km: Mapped[Optional[float]] = mapped_column()

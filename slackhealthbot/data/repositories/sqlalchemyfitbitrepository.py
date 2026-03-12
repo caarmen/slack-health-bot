@@ -242,6 +242,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         fitbit_activity = models.FitbitActivity(
             log_id=activity.log_id,
             type_id=activity.type_id,
+            logged_at=activity.logged_at,
             total_minutes=activity.total_minutes,
             calories=activity.calories,
             distance_km=activity.distance_km,
@@ -327,7 +328,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             models.FitbitActivity.type_id == type_id,
         ]
         if since:
-            conditions.append(models.FitbitActivity.updated_at >= since)
+            conditions.append(models.FitbitActivity.logged_at >= since)
 
         subqueries = [
             select(func.max(column))
@@ -795,6 +796,7 @@ def _db_activity_to_domain_activity(
     return ActivityData(
         log_id=db_activity.log_id,
         type_id=db_activity.type_id,
+        logged_at=db_activity.logged_at,
         calories=db_activity.calories,
         distance_km=db_activity.distance_km,
         total_minutes=db_activity.total_minutes,

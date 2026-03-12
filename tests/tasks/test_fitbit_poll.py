@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from httpx import Response
 from respx import MockRouter
 
+import slackhealthbot
 from slackhealthbot.data.database.models import FitbitUser, User
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
@@ -26,6 +27,7 @@ from tests.testsupport.factories.factories import (
     FitbitUserFactory,
     UserFactory,
 )
+from tests.testsupport.mock.builtins import freeze_time
 from tests.testsupport.testdata.fitbit_scenarios import (
     FitbitActivityScenario,
     FitbitSleepScenario,
@@ -176,6 +178,11 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
     # Use the client as a context manager so that the app lifespan hook is called
     # https://fastapi.tiangolo.com/advanced/testing-events/
     with client:
+        freeze_time(
+            monkeypatch,
+            dt_module_to_freeze=slackhealthbot.routers.fitbit.datetime,
+            frozen_datetime_args=(2023, 1, 23, 9, 0, 0),
+        )
         await do_poll(
             local_fitbit_repo=local_fitbit_repository,
             cache=Cache(),
@@ -247,6 +254,19 @@ async def test_schedule_fitbit_poll(  # noqa: PLR0913
     ).mock(return_value=Response(200))
 
     fitbitconfig.configure(UpdateTokenUseCase())
+    dt_to_freeze = slackhealthbot.tasks.fitbitpoll.datetime
+
+    class FrozenDate(datetime.date):
+        def today():
+            return FrozenDate(2023, 1, 23)
+
+    monkeypatch.setattr(dt_to_freeze, "date", FrozenDate)
+
+    freeze_time(
+        monkeypatch,
+        dt_module_to_freeze=dt_to_freeze,
+        frozen_datetime_args=(2023, 1, 23, 23, 49, 59),
+    )
     task = await fitbitpoll.schedule_fitbit_poll(
         initial_delay_s=0,
     )
@@ -321,6 +341,7 @@ async def test_fitbit_poll_activity_upserts_all_activities(
                         "activeZoneMinutes": {"minutesInHeartRateZones": []},
                         "activityName": "Spinning",
                         "activityTypeId": 55001,
+                        "startTime": "2023-01-23T10:16:00.000+01:00",
                         "logId": 2001,
                         "calories": 76,
                         "duration": 665000,
@@ -329,6 +350,7 @@ async def test_fitbit_poll_activity_upserts_all_activities(
                         "activeZoneMinutes": {"minutesInHeartRateZones": []},
                         "activityName": "Spinning",
                         "activityTypeId": 55001,
+                        "startTime": "2023-01-23T09:16:00.000+01:00",
                         "logId": 2002,
                         "calories": 90,
                         "duration": 720000,

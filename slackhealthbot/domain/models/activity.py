@@ -20,6 +20,7 @@ class ActivityZoneMinutes:
 class ActivityData:
     log_id: int
     type_id: int
+    logged_at: dt.datetime
     total_minutes: int
     calories: int
     distance_km: float | None

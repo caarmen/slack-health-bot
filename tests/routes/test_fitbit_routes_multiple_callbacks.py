@@ -341,7 +341,7 @@ async def test_duplicate_activity_sequential_notification(
                 [
                     {
                         "ownerId": user.fitbit.oauth_userid,
-                        "date": "2023-05-12",
+                        "date": "2023-01-23",
                         "collectionType": "activities",
                     }
                 ]
@@ -444,7 +444,7 @@ async def test_duplicate_activity_parallel_notification(
                     [
                         {
                             "ownerId": user.fitbit.oauth_userid,
-                            "date": "2023-05-12",
+                            "date": "2023-01-23",
                             "collectionType": "activities",
                         }
                     ]
