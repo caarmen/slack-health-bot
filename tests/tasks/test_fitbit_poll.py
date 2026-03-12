@@ -396,5 +396,5 @@ async def test_fitbit_poll_activity_upserts_all_activities(
     assert activity_2 is not None
 
     assert activity_1.calories == 76  # noqa PLR2004 - literals are ok for tests
-    assert activity_1.logged_at == datetime.datetime(2023, 1, 23, 10, 16)
+    assert activity_1.logged_at == datetime.datetime(2023, 1, 23, 9, 16)
     assert activity_1.total_minutes == 11  # noqa PLR2004 - literals are ok for tests

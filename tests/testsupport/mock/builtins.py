@@ -18,7 +18,4 @@ def freeze_time(
                 return FrozenDate(*frozen_datetime_args, tzinfo=tz)
             return FrozenDate(*frozen_datetime_args)
 
-        def astimezone(self):
-            return super().astimezone(tz=local_timezone)
-
     mp.setattr(dt_module_to_freeze, "datetime", FrozenDate)
