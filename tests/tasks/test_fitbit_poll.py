@@ -310,11 +310,11 @@ async def test_fitbit_poll_activity_upserts_all_activities(
     settings: Settings,
 ):
     """
-    Given a user with no activities for the day
+    Given a user with one activitiy for the day
     When we poll fitbit for that day
     Then all activities returned by fitbit for that date are upserted
     """
-    user_factory, fitbit_user_factory, _ = fitbit_factories
+    user_factory, fitbit_user_factory, fitbit_activity_factory = fitbit_factories
 
     # Given a user with fitbit credentials
     user: User = user_factory.create(fitbit=None)
@@ -322,6 +322,15 @@ async def test_fitbit_poll_activity_upserts_all_activities(
         user_id=user.id,
         oauth_expiration_date=datetime.datetime.now(datetime.timezone.utc)
         + datetime.timedelta(days=1),
+    )
+    # And one activity for the day
+    fitbit_activity_factory.create(
+        fitbit_user_id=fitbit_user.id,
+        log_id=2001,
+        type_id=55001,
+        logged_at=datetime.datetime(2023, 1, 23, 9, 15, tzinfo=datetime.timezone.utc),
+        calories=75,
+        total_minutes=10,
     )
 
     # And fitbit returns no sleep data
@@ -385,3 +394,7 @@ async def test_fitbit_poll_activity_upserts_all_activities(
 
     assert activity_1 is not None
     assert activity_2 is not None
+
+    assert activity_1.calories == 76  # noqa PLR2004 - literals are ok for tests
+    assert activity_1.logged_at == datetime.datetime(2023, 1, 23, 10, 16)
+    assert activity_1.total_minutes == 11  # noqa PLR2004 - literals are ok for tests

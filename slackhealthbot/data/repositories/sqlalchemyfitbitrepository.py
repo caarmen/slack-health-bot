@@ -233,6 +233,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                     total_minutes=activity.total_minutes,
                     calories=activity.calories,
                     distance_km=activity.distance_km,
+                    logged_at=activity.logged_at,
                     **zone_minutes,
                 )
             )
