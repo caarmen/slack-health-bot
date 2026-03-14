@@ -135,7 +135,9 @@ def _remote_activity_to_domain_activity(
     return ActivityData(
         log_id=fitbit_activity.logId,
         type_id=fitbit_activity.activityTypeId,
-        logged_at=datetime.datetime.fromisoformat(fitbit_activity.startTime),
+        logged_at=datetime.datetime.fromisoformat(fitbit_activity.startTime).astimezone(
+            datetime.timezone.utc
+        ),
         calories=fitbit_activity.calories,
         distance_km=(
             fitbit_activity.distance
