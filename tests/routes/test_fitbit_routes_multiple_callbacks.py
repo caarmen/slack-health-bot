@@ -440,6 +440,7 @@ async def test_duplicate_activity_parallel_notification(
         async def post_webhook(ac: AsyncClient):
             response = await ac.post(
                 "/fitbit-notification-webhook/",
+                headers={"content-type": "application/json"},
                 content=json.dumps(
                     [
                         {

@@ -7,7 +7,7 @@ from slackhealthbot.settings import Settings
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(app)
+    return TestClient(app, headers={"content-type": "application/json"})
 
 
 @pytest.fixture(autouse=True)

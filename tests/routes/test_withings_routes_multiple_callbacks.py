@@ -83,6 +83,7 @@ async def test_multiple_notifications(
     with client:
         client.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683894606,
@@ -130,6 +131,7 @@ async def test_multiple_notifications(
     with client:
         client.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683895606,
@@ -213,6 +215,7 @@ async def test_duplicate_weight_sequential_notification(
     with client:
         response = client.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683894606,
@@ -240,6 +243,7 @@ async def test_duplicate_weight_sequential_notification(
     with client:
         response = client.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683894606,
@@ -317,6 +321,7 @@ async def test_duplicate_weight_parallel_notification(
         async def post_webhook(ac: AsyncClient):
             response = await ac.post(
                 "/withings-notification-webhook/",
+                headers={"content-type": "application/x-www-form-urlencoded"},
                 data={
                     "userid": db_withings_user.oauth_userid,
                     "startdate": 1683894606,

@@ -55,8 +55,7 @@ def upgrade() -> None:
         )
 
     # ### end Alembic commands ###
-    op.execute(
-        """
+    op.execute("""
         INSERT INTO fitbit_activities 
             (log_id, type_id, total_minutes, calories, fat_burn_minutes, cardio_minutes, peak_minutes, out_of_range_minutes, fitbit_user_id, created_at, updated_at)
         SELECT 
@@ -64,8 +63,7 @@ def upgrade() -> None:
         FROM
             fitbit_latest_activities
 
-    """
-    )
+    """)
     op.drop_table("fitbit_latest_activities")
 
 

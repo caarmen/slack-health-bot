@@ -2,6 +2,7 @@
 """
 Command-line utility to generate a password hash to use with the sqladmin interface.
 """
+
 import sys
 from getpass import getpass
 
