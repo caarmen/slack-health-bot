@@ -16,8 +16,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        """
+    op.execute("""
         CREATE VIEW fitbit_daily_activities AS
             SELECT
                 fitbit_user_id,
@@ -37,8 +36,7 @@ def upgrade() -> None:
                 fitbit_user_id,
                 type_id,
                 date(updated_at)
-        """
-    )
+        """)
 
 
 def downgrade() -> None:

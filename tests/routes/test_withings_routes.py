@@ -102,6 +102,7 @@ async def test_weight_notification(  # noqa: PLR0913
     with client:
         response = client.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683894606,
@@ -138,6 +139,7 @@ def test_notification_unknown_user(
     with client:
         response = client.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": "UNKNOWNUSER",
                 "startdate": 1683894606,

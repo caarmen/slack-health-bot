@@ -31,8 +31,7 @@ def upgrade() -> None:
         batch_op.alter_column("logged_at", nullable=False)
 
     # Recreate the view, this time using logged_at instead of updated_at.
-    op.execute(
-        """
+    op.execute("""
         CREATE VIEW fitbit_daily_activities AS
             SELECT
                 fitbit_user_id,
@@ -52,8 +51,7 @@ def upgrade() -> None:
                 fitbit_user_id,
                 type_id,
                 date(logged_at)
-        """
-    )
+        """)
 
 
 def downgrade() -> None:
@@ -64,8 +62,7 @@ def downgrade() -> None:
     with op.batch_alter_table("fitbit_activities", schema=None) as batch_op:
         batch_op.drop_column("logged_at")
     # Make the view use updated_at again, instead of logged_at.
-    op.execute(
-        """
+    op.execute("""
         CREATE VIEW fitbit_daily_activities AS
             SELECT
                 fitbit_user_id,
@@ -85,5 +82,4 @@ def downgrade() -> None:
                 fitbit_user_id,
                 type_id,
                 date(updated_at)
-        """
-    )
+        """)
