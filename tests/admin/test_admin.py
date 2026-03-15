@@ -58,6 +58,7 @@ async def test_admin_access_integration_test(
     async with lifespan(app):
         response = client.post(
             "/admin/login",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "username": "admin",
                 "password": "azerty",
@@ -151,6 +152,7 @@ async def test_login_wrong_password(
     async with lifespan(app):
         response = client.post(
             "/admin/login",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "username": "admin",
                 "password": "wrong password",

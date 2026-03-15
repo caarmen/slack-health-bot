@@ -102,6 +102,7 @@ async def test_refresh_token_ok(
     with client as client_ctx:
         response = client_ctx.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683894606,
@@ -173,6 +174,7 @@ async def test_refresh_token_fail(
     with client as client_ctx:
         response = client_ctx.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683894606,
@@ -339,6 +341,7 @@ async def test_logged_out(
     with client as client_ctx:
         response = client_ctx.post(
             "/withings-notification-webhook/",
+            headers={"content-type": "application/x-www-form-urlencoded"},
             data={
                 "userid": db_withings_user.oauth_userid,
                 "startdate": 1683894606,
