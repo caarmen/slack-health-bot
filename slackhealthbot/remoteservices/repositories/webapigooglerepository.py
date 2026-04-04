@@ -2,8 +2,10 @@ import datetime
 
 from slackhealthbot.core.models import OAuthFields
 from slackhealthbot.domain.remoterepository.remotegooglerepository import (
+    HealthIds,
     RemoteGoogleRepository,
 )
+from slackhealthbot.remoteservices.api.google import identityapi
 from slackhealthbot.settings import Settings
 
 
@@ -23,4 +25,17 @@ class WebApiGoogleRepository(RemoteGoogleRepository):
             oauth_expiration_date=datetime.datetime.now(datetime.timezone.utc)
             + datetime.timedelta(seconds=int(response_data["expires_in"]))
             - datetime.timedelta(minutes=5),
+        )
+
+    async def get_identity(
+        self,
+        oauth_fields: OAuthFields,
+    ) -> HealthIds:
+        identity: identityapi.Identity = await identityapi.get_identity(
+            oauth_token=oauth_fields,
+            settings=self.settings,
+        )
+        return HealthIds(
+            fitbit_user_id=identity.legacyUserId,
+            health_user_id=identity.healthUserId,
         )

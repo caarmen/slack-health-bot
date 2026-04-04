@@ -23,6 +23,7 @@ from slackhealthbot.oauth import fitbitconfig as oauth_fitbit
 from slackhealthbot.oauth import googleconfig as oauth_google
 from slackhealthbot.oauth import withingsconfig as oauth_withings
 from slackhealthbot.routers.fitbit import router as fitbit_router
+from slackhealthbot.routers.google import router as google_router
 from slackhealthbot.routers.withings import router as withings_router
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks import fitbitpoll
@@ -73,6 +74,7 @@ app = FastAPI(
 app.container = container
 app.include_router(withings_router)
 app.include_router(fitbit_router)
+app.include_router(google_router)
 
 
 @app.head("/")
