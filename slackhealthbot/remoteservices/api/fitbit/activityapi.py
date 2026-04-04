@@ -41,37 +41,6 @@ class FitbitActivities(BaseModel):
         return cls(**json.loads(text))
 
 
-async def get_activity(
-    oauth_token: OAuthFields,
-    when: datetime.datetime,
-    settings: Settings,
-) -> FitbitActivities | None:
-    """
-    :raises:
-        UserLoggedOutException if the refresh token request fails
-    """
-    logging.info("get_activity for user")
-    when_str = when.strftime("%Y-%m-%dT%H:%M:%S")
-    response = await requests.get(
-        provider=settings.fitbit_oauth_settings.name,
-        token=oauth_token,
-        url=f"{settings.fitbit_oauth_settings.base_url}1/user/-/activities/list.json",
-        params={
-            "beforeDate": when_str,
-            "sort": "desc",
-            "offset": 0,
-            "limit": 1,
-        },
-    )
-    try:
-        return FitbitActivities.parse(response.content)
-    except Exception as e:
-        logging.warning(
-            f"Error parsing activity: error {e}, input: {input}", exc_info=e
-        )
-        return None
-
-
 async def get_activities_for_date(
     oauth_token: OAuthFields,
     when: datetime.date,
