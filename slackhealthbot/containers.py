@@ -20,6 +20,9 @@ from slackhealthbot.domain.localrepository.localwithingsrepository import (
 from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
+from slackhealthbot.domain.remoterepository.remotegooglerepository import (
+    RemoteGoogleRepository,
+)
 from slackhealthbot.domain.remoterepository.remoteopenairepository import (
     RemoteOpenAiRepository,
 )
@@ -31,6 +34,9 @@ from slackhealthbot.domain.remoterepository.remotewithingsrepository import (
 )
 from slackhealthbot.remoteservices.repositories.webapifitbitrepository import (
     WebApiFitbitRepository,
+)
+from slackhealthbot.remoteservices.repositories.webapigooglerepository import (
+    WebApiGoogleRepository,
 )
 from slackhealthbot.remoteservices.repositories.webapiwithingsrepository import (
     WebApiWithingsRepository,
@@ -59,7 +65,7 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.domain.usecases.fitbit.usecase_process_new_activity",
             "slackhealthbot.domain.usecases.fitbit.usecase_process_new_sleep",
             "slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth",
-            "slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth",
+            "slackhealthbot.domain.usecases.google.usecase_update_user_oauth",
             "slackhealthbot.domain.usecases.slack.usecase_post_activity",
             "slackhealthbot.domain.usecases.slack.usecase_post_daily_activity",
             "slackhealthbot.domain.usecases.slack.usecase_post_sleep",
@@ -95,6 +101,10 @@ class Container(containers.DeclarativeContainer):
     )
     remote_fitbit_repository: RemoteFitbitRepository = providers.Factory(
         WebApiFitbitRepository,
+        settings,
+    )
+    remote_google_repository: RemoteGoogleRepository = providers.Factory(
+        WebApiGoogleRepository,
         settings,
     )
     remote_withings_repository: RemoteWithingsRepository = providers.Factory(
