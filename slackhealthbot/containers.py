@@ -71,6 +71,7 @@ class Container(containers.DeclarativeContainer):
             "slackhealthbot.domain.usecases.withings.usecase_process_new_weight",
             "slackhealthbot.domain.usecases.withings.usecase_update_user_oauth",
             "slackhealthbot.oauth.fitbitconfig",
+            "slackhealthbot.oauth.googleconfig",
             "slackhealthbot.oauth.withingsconfig",
             "slackhealthbot.routers.dependencies",
             "slackhealthbot.routers.fitbit",
