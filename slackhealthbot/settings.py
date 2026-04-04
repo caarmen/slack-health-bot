@@ -37,6 +37,15 @@ class FitbitOAuthSettings:
     subscriber_verification_code: str
 
 
+@dataclasses.dataclass
+class GoogleOAuthSettings:
+    name = "google"
+    base_url: str
+    oidc_url: str
+    oauth_scopes: list[str]
+    redirect_uri: str
+
+
 class Poll(BaseModel):
     enabled: bool = True
     interval_seconds: int = 3600
@@ -146,6 +155,17 @@ class Withings(BaseModel):
     oauth_scopes: list[str] = ["user.metrics", "user.activity"]
 
 
+class Google(BaseModel):
+    callback_url: AnyHttpUrl
+    base_url: str = "https://health.googleapis.com"
+    oidc_url: str = "https://accounts.google.com/.well-known/openid-configuration"
+    oauth_scopes: list[str] = [
+        "openid",
+        "https://www.googleapis.com/auth/googlehealth.activity_and_fitness",
+        "https://www.googleapis.com/auth/googlehealth.sleep",
+    ]
+
+
 class OpenAi(BaseModel):
     model: str
 
@@ -162,6 +182,7 @@ class AppSettings(BaseSettings):
     logging: Logging
     withings: Withings
     fitbit: Fitbit
+    google: Google
     openai: OpenAi
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
@@ -214,6 +235,8 @@ class SecretSettings(BaseSettings):
     fitbit_client_id: str
     fitbit_client_secret: str
     fitbit_client_subscriber_verification_code: str
+    google_client_id: str
+    google_client_secret: str
     slack_webhook_url: HttpUrl
     openai_api_key: str | None = None
     session_secret_key: str = "".join(
@@ -244,4 +267,13 @@ class Settings:
             base_url=self.app_settings.fitbit.base_url,
             oauth_scopes=self.app_settings.fitbit.oauth_scopes,
             subscriber_verification_code=self.secret_settings.fitbit_client_subscriber_verification_code,
+        )
+
+    @property
+    def google_oauth_settings(self):
+        return GoogleOAuthSettings(
+            oidc_url=self.app_settings.google.oidc_url,
+            base_url=self.app_settings.google.base_url,
+            oauth_scopes=self.app_settings.google.oauth_scopes,
+            redirect_uri=f"{self.app_settings.google.callback_url}google-oauth-webhook",
         )
