@@ -1,8 +1,10 @@
+import datetime as dt
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
 from slackhealthbot.core.models import OAuthFields
+from slackhealthbot.domain.models.activity import ActivityData
 
 
 class HealthIds(BaseModel):
@@ -22,3 +24,10 @@ class RemoteGoogleRepository(ABC):
         self,
         oauth_fields: OAuthFields,
     ) -> HealthIds: ...
+
+    @abstractmethod
+    async def get_activities_for_date(
+        self,
+        oauth_fields: OAuthFields,
+        when: dt.date,
+    ) -> list[tuple[str, ActivityData]]: ...
