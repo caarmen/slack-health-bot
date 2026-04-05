@@ -62,7 +62,7 @@ class FitbitUser(TimestampMixin, Base):
 class FitbitActivity(TimestampMixin, Base):
     __tablename__ = "fitbit_activities"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    log_id: Mapped[int] = mapped_column(unique=True)
+    log_id: Mapped[str] = mapped_column(String(80), unique=True)
     type_id: Mapped[int] = mapped_column()
     logged_at: Mapped[datetime] = mapped_column()
     total_minutes: Mapped[int] = mapped_column()

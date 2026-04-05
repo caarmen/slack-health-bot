@@ -123,7 +123,7 @@ def _remote_activity_to_domain_activity(
     fitbit_activity: FitbitActivity,
 ) -> ActivityData:
     return ActivityData(
-        log_id=fitbit_activity.logId,
+        log_id=str(fitbit_activity.logId),
         type_id=fitbit_activity.activityTypeId,
         logged_at=datetime.datetime.fromisoformat(fitbit_activity.startTime).astimezone(
             datetime.timezone.utc

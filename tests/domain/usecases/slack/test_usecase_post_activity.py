@@ -56,7 +56,7 @@ CREATE_MESSAGE_SCENARIOS = [
     CreateMessageScenario(
         name="new all-time record",
         new_activity_data=ActivityData(
-            log_id=-3,
+            log_id="-3",
             type_id=123,
             logged_at=dt.datetime(2024, 10, 20, 3, 2, 3),
             total_minutes=120,
@@ -79,7 +79,7 @@ CREATE_MESSAGE_SCENARIOS = [
     CreateMessageScenario(
         name="recent top record",
         new_activity_data=ActivityData(
-            log_id=-3,
+            log_id="-3",
             type_id=123,
             logged_at=dt.datetime(2024, 10, 20, 3, 2, 1),
             total_minutes=90,
@@ -102,7 +102,7 @@ CREATE_MESSAGE_SCENARIOS = [
     CreateMessageScenario(
         name="lowest score",
         new_activity_data=ActivityData(
-            log_id=-3,
+            log_id="-3",
             type_id=123,
             logged_at=dt.datetime(2024, 10, 20, 3, 2, 0),
             total_minutes=1,
@@ -252,7 +252,7 @@ def test_create_message_report_fields(
                 secret_settings=SecretSettings(),
             )
     new_activity_data = ActivityData(
-        log_id=-3,
+        log_id="-3",
         type_id=123,
         logged_at=dt.datetime(2023, 1, 23, 12, 13, 14),
         total_minutes=90,
