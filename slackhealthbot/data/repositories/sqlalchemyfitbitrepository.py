@@ -34,7 +34,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
     async def create_user(
         self,
         slack_alias: str,
-        fitbit_userid: str,
+        fitbit_user_id: str | None,
         oauth_data: OAuthFields,
     ) -> User:
         user = (
@@ -52,10 +52,11 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
 
         fitbit_user = models.FitbitUser(
             user_id=user.id,
-            oauth_userid=fitbit_userid,
+            oauth_userid=oauth_data.oauth_userid,
             oauth_access_token=oauth_data.oauth_access_token,
             oauth_refresh_token=oauth_data.oauth_refresh_token,
             oauth_expiration_date=oauth_data.oauth_expiration_date,
+            fitbit_user_id=fitbit_user_id,
         )
         self.db.add(fitbit_user)
         await self.db.commit()
@@ -63,11 +64,11 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
 
         return User(
             identity=UserIdentity(
-                fitbit_userid=fitbit_user.oauth_userid,
+                fitbit_userid=fitbit_user.fitbit_user_id,
                 slack_alias=slack_alias,
             ),
             oauth_data=OAuthFields(
-                oauth_userid=fitbit_userid,
+                oauth_userid=oauth_data.oauth_userid,
                 oauth_access_token=fitbit_user.oauth_access_token,
                 oauth_refresh_token=fitbit_user.oauth_refresh_token,
                 oauth_expiration_date=fitbit_user.oauth_expiration_date.replace(
@@ -84,12 +85,12 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             await self.db.scalars(
                 statement=select(models.User)
                 .join(models.User.fitbit)
-                .where(models.FitbitUser.oauth_userid == fitbit_userid)
+                .where(models.FitbitUser.fitbit_user_id == fitbit_userid)
             )
         ).one_or_none()
         return (
             UserIdentity(
-                fitbit_userid=user.fitbit.oauth_userid,
+                fitbit_userid=user.fitbit.fitbit_user_id,
                 slack_alias=user.slack_alias,
             )
             if user
@@ -103,7 +104,10 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             statement=select(models.User).join(models.User.fitbit)
         )
         return [
-            UserIdentity(fitbit_userid=x.fitbit.oauth_userid, slack_alias=x.slack_alias)
+            UserIdentity(
+                fitbit_userid=x.fitbit.fitbit_user_id,
+                slack_alias=x.slack_alias,
+            )
             for x in users
         ]
 
@@ -114,7 +118,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         fitbit_user: models.FitbitUser = (
             await self.db.scalars(
                 statement=select(models.FitbitUser).where(
-                    models.FitbitUser.oauth_userid == fitbit_userid
+                    models.FitbitUser.fitbit_user_id == fitbit_userid
                 )
             )
         ).one()
@@ -135,18 +139,18 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             await self.db.scalars(
                 statement=select(models.User)
                 .join(models.User.fitbit)
-                .where(models.FitbitUser.oauth_userid == fitbit_userid)
+                .where(models.FitbitUser.fitbit_user_id == fitbit_userid)
             )
         ).one_or_none()
         if not user:
             raise UnknownUserException
         return User(
             identity=UserIdentity(
-                fitbit_userid=user.fitbit.oauth_userid,
+                fitbit_userid=user.fitbit.fitbit_user_id,
                 slack_alias=user.slack_alias,
             ),
             oauth_data=OAuthFields(
-                oauth_userid=fitbit_userid,
+                oauth_userid=user.fitbit.oauth_userid,
                 oauth_access_token=user.fitbit.oauth_access_token,
                 oauth_refresh_token=user.fitbit.oauth_refresh_token,
                 oauth_expiration_date=user.fitbit.oauth_expiration_date.replace(
@@ -168,7 +172,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             )
             .where(
                 and_(
-                    models.FitbitUser.oauth_userid == fitbit_userid,
+                    models.FitbitUser.fitbit_user_id == fitbit_userid,
                     models.FitbitActivity.type_id == type_id,
                 )
             )
@@ -188,7 +192,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 .join(models.FitbitUser)
                 .where(
                     and_(
-                        models.FitbitUser.oauth_userid == fitbit_userid,
+                        models.FitbitUser.fitbit_user_id == fitbit_userid,
                         models.FitbitActivity.log_id == log_id,
                     )
                 )
@@ -204,7 +208,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         user: models.FitbitUser = (
             await self.db.scalars(
                 statement=select(models.FitbitUser).where(
-                    models.FitbitUser.oauth_userid == fitbit_userid
+                    models.FitbitUser.fitbit_user_id == fitbit_userid
                 )
             )
         ).one_or_none()
@@ -261,7 +265,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
     ):
         await self.db.execute(
             statement=update(models.FitbitUser)
-            .where(models.FitbitUser.oauth_userid == fitbit_userid)
+            .where(models.FitbitUser.fitbit_user_id == fitbit_userid)
             .values(
                 last_sleep_start_time=sleep.start_time,
                 last_sleep_end_time=sleep.end_time,
@@ -278,7 +282,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         fitbit_user: models.FitbitUser = (
             await self.db.scalars(
                 statement=select(models.FitbitUser).where(
-                    models.FitbitUser.oauth_userid == fitbit_userid
+                    models.FitbitUser.fitbit_user_id == fitbit_userid
                 )
             )
         ).one_or_none()
@@ -295,13 +299,14 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
 
     async def update_oauth_data(
         self,
-        fitbit_userid: str,
+        oauth_userid: str,
         oauth_data: OAuthFields,
     ):
         await self.db.execute(
             statement=update(models.FitbitUser)
-            .where(models.FitbitUser.oauth_userid == fitbit_userid)
+            .where(models.FitbitUser.oauth_userid == oauth_userid)
             .values(
+                oauth_userid=oauth_data.oauth_userid,
                 oauth_access_token=oauth_data.oauth_access_token,
                 oauth_refresh_token=oauth_data.oauth_refresh_token,
                 oauth_expiration_date=oauth_data.oauth_expiration_date,
@@ -325,7 +330,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             models.FitbitActivity.peak_minutes,
         ]
         conditions = [
-            models.FitbitUser.oauth_userid == fitbit_userid,
+            models.FitbitUser.fitbit_user_id == fitbit_userid,
             models.FitbitActivity.type_id == type_id,
         ]
         if since:
@@ -371,7 +376,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 .where(
                     and_(
                         models.FitbitDailyActivity.date < activity_date,
-                        models.FitbitUser.oauth_userid == fitbit_userid,
+                        models.FitbitUser.fitbit_user_id == fitbit_userid,
                         models.FitbitDailyActivity.type_id == type_id,
                     )
                 )
@@ -382,7 +387,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             return None
         return DailyActivityStats(
             date=daily_activity.date,
-            fitbit_userid=daily_activity.fitbit_user.oauth_userid,
+            fitbit_userid=daily_activity.fitbit_user.fitbit_user_id,
             slack_alias=daily_activity.fitbit_user.user.slack_alias,
             type_id=daily_activity.type_id,
             count_activities=daily_activity.count_activities,
@@ -416,7 +421,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             .where(
                 and_(
                     models.FitbitDailyActivity.date == activity_date,
-                    models.FitbitUser.oauth_userid == fitbit_userid,
+                    models.FitbitUser.fitbit_user_id == fitbit_userid,
                     models.FitbitDailyActivity.type_id.in_(activity_type_ids),
                 )
             )
@@ -535,7 +540,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             .where(
                 and_(
                     models.FitbitDailyActivity.date <= up_to_date,
-                    models.FitbitUser.oauth_userid == fitbit_userid,
+                    models.FitbitUser.fitbit_user_id == fitbit_userid,
                     models.FitbitDailyActivity.type_id == primary_type_id,
                     yesterday_activity_alias.date
                     == None,  # noqa E711 (sqlalchemy needs this)
@@ -620,7 +625,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             .where(
                 and_(
                     models.FitbitDailyActivity.date <= up_to_date,
-                    models.FitbitUser.oauth_userid == fitbit_userid,
+                    models.FitbitUser.fitbit_user_id == fitbit_userid,
                     models.FitbitDailyActivity.type_id.in_(type_ids_filter),
                 )
             )
@@ -738,7 +743,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         return [
             DailyActivityStats(
                 date=daily_activity.date,
-                fitbit_userid=daily_activity.fitbit_user.oauth_userid,
+                fitbit_userid=daily_activity.fitbit_user.fitbit_user_id,
                 slack_alias=daily_activity.fitbit_user.user.slack_alias,
                 type_id=daily_activity.type_id,
                 count_activities=daily_activity.count_activities,
@@ -770,7 +775,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             models.FitbitDailyActivity.sum_out_of_zone_minutes,
         ]
         conditions = [
-            models.FitbitUser.oauth_userid == fitbit_userid,
+            models.FitbitUser.fitbit_user_id == fitbit_userid,
             models.FitbitDailyActivity.type_id == type_id,
         ]
         if since:

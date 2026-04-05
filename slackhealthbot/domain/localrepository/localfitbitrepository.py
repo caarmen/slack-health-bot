@@ -103,7 +103,7 @@ class LocalFitbitRepository(ABC):
     @abstractmethod
     async def update_oauth_data(
         self,
-        fitbit_userid: str,
+        oauth_userid: str,
         oauth_data: OAuthFields,
     ):
         pass

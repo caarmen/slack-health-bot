@@ -38,12 +38,12 @@ async def _upsert_user(
     if not user_identity:
         return await local_repo.create_user(
             slack_alias=slack_alias,
-            fitbit_userid=oauth_fields.oauth_userid,
+            fitbit_user_id=oauth_fields.oauth_userid,
             oauth_data=oauth_fields,
         )
     else:
         await local_repo.update_oauth_data(
-            fitbit_userid=oauth_fields.oauth_userid,
+            oauth_userid=oauth_fields.oauth_userid,
             oauth_data=oauth_fields,
         )
     return await local_repo.get_user_by_fitbit_userid(
