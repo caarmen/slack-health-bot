@@ -130,6 +130,12 @@ async def get_sleep(
     # of the given date.
 
     google_sleep.dataPoints = [
-        x for x in google_sleep.dataPoints if x.sleep.interval.endTime.date() == when
+        x
+        for x in google_sleep.dataPoints
+        if (
+            x.sleep.interval.endTime.replace(tzinfo=None)
+            + dt.timedelta(seconds=x.sleep.interval.endUtcOffset)
+        ).date()
+        == when
     ]
     return google_sleep
