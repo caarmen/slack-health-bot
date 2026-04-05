@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from slackhealthbot.core.models import OAuthFields
 from slackhealthbot.domain.models.activity import (
@@ -6,11 +7,12 @@ from slackhealthbot.domain.models.activity import (
     ActivityZone,
     ActivityZoneMinutes,
 )
+from slackhealthbot.domain.models.sleep import SleepData
 from slackhealthbot.domain.remoterepository.remotegooglerepository import (
     HealthIds,
     RemoteGoogleRepository,
 )
-from slackhealthbot.remoteservices.api.google import activityapi, identityapi
+from slackhealthbot.remoteservices.api.google import activityapi, identityapi, sleepapi
 from slackhealthbot.settings import Settings
 
 
@@ -66,6 +68,18 @@ class WebApiGoogleRepository(RemoteGoogleRepository):
         ]
         return domain_activities
 
+    async def get_sleep(
+        self,
+        oauth_fields: OAuthFields,
+        when: datetime.date,
+    ) -> SleepData | None:
+        sleep: sleepapi.GoogleSleep = await sleepapi.get_sleep(
+            oauth_token=oauth_fields,
+            when=when,
+            settings=self.settings,
+        )
+        return remote_service_sleep_to_domain_sleep(sleep) if sleep else None
+
 
 def remote_service_activity_type(exercise: activityapi.Exercise) -> int:
     # https://developers.google.com/health/reference/rest/v4/users.dataTypes.dataPoints#Exercise.ExerciseType
@@ -120,4 +134,27 @@ def remote_service_activity_to_domain_activity(
                 // 60,
             ),
         ],
+    )
+
+
+def remote_service_sleep_to_domain_sleep(
+    remote: sleepapi.GoogleSleep | None,
+) -> SleepData | None:
+    if not remote:
+        return None
+    main_sleep_item = next(
+        (item for item in remote.dataPoints if item.sleep.metadata.nap is False), None
+    )
+    if not main_sleep_item:
+        logging.warning("No main sleep found")
+        return None
+
+    interval: sleepapi.Interval = main_sleep_item.sleep.interval
+    return SleepData(
+        start_time=interval.startTime.replace(tzinfo=None)
+        + datetime.timedelta(seconds=interval.startUtcOffset),
+        end_time=interval.endTime.replace(tzinfo=None)
+        + datetime.timedelta(seconds=interval.endUtcOffset),
+        sleep_minutes=main_sleep_item.sleep.summary.minutesAsleep,
+        wake_minutes=main_sleep_item.sleep.summary.minutesAwake,
     )
