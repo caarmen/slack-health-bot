@@ -49,8 +49,8 @@ class FitbitUser(TimestampMixin, Base):
     user: Mapped["User"] = relationship(
         back_populates="fitbit", lazy="joined", join_depth=2
     )
-    oauth_access_token: Mapped[Optional[str]] = mapped_column(String(40))
-    oauth_refresh_token: Mapped[Optional[str]] = mapped_column(String(40))
+    oauth_access_token: Mapped[Optional[str]] = mapped_column(String(512))
+    oauth_refresh_token: Mapped[Optional[str]] = mapped_column(String(512))
     oauth_userid: Mapped[str] = mapped_column(String(40))
     oauth_expiration_date: Mapped[Optional[datetime]] = mapped_column()
     last_sleep_start_time: Mapped[Optional[datetime]] = mapped_column()
