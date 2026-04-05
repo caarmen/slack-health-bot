@@ -83,6 +83,7 @@ graph
     end
     subgraph Routes
         FitbitRoutes
+        GoogleRoutes
         WithingsRoutes
     end
     subgraph Data
@@ -95,6 +96,7 @@ graph
     subgraph Domain
         subgraph UseCases
             FitbitUseCases
+            GoogleUseCases
             WithingsUseCases
             SlackUseCases
         end
@@ -104,6 +106,7 @@ graph
         end
         subgraph RemoteRepositoryInterfaces
             RemoteFitbitRepository("`*RemoteFitbitRepository*`"):::interface
+            RemoteGoogleRepository("`*RemoteGoogleRepository*`"):::interface
             RemoteWithingsRepository("`*RemoteWithingsRepository*`"):::interface
             RemoteSlackRepository("`*RemoteSlackRepository*`"):::interface
             RemoteOpenAiRepository("`*RemoteOpenAiRepository*`"):::interface
@@ -112,12 +115,14 @@ graph
     subgraph RemoteServices[Remote services]
         subgraph RemoteRepositories
             WebApiFitbitRepository
+            WebApiGoogleRepository
             WebApiWithingsRepository
             WebhookSlackRepository
             WebOpenAiRepository
         end
         subgraph Apis
             FitbitApis
+            GoogleApis
             WithingsApis
             SlackApis
         end
@@ -162,6 +167,7 @@ graph
     end
     subgraph Routes
         FitbitRoutes
+        GoogleRoutes
         WithingsRoutes
     end
     subgraph Data
@@ -174,6 +180,7 @@ graph
     subgraph Domain
         subgraph UseCases
             FitbitUseCases
+            GoogleUseCases
             WithingsUseCases
             SlackUseCases
         end
@@ -183,6 +190,7 @@ graph
         end
         subgraph RemoteRepositoryInterfaces
             RemoteFitbitRepository("`*RemoteFitbitRepository*`"):::interface
+            RemoteGoogleRepository("`*RemoteGoogleRepository*`"):::interface
             RemoteWithingsRepository("`*RemoteWithingsRepository*`"):::interface
             RemoteSlackRepository("`*RemoteSlackRepository*`"):::interface
             RemoteOpenAiRepository("`*RemoteOpenAiRepository*`"):::interface
@@ -191,12 +199,14 @@ graph
     subgraph RemoteServices[Remote services]
         subgraph RemoteRepositories
             WebApiFitbitRepository
+            WebApiGoogleRepository
             WebApiWithingsRepository
             WebhookSlackRepository
             WebOpenAiRepository
         end
         subgraph Apis
             FitbitApis
+            GoogleApis
             WithingsApis
             SlackApis
         end
@@ -207,6 +217,7 @@ graph
     end
     subgraph OAuth
         FitbitOAuth
+        GoogleOAuth
         WithingsOAuth
     end
     subgraph DI
@@ -214,6 +225,7 @@ graph
     Sqlite3Database[(SQlite3Database)]:::external
     WithingsWebServer:::external
     FitbitWebServer:::external
+    GoogleWebServer:::external
     SlackWebServer:::external
     OpenAiWebServer:::external
 
@@ -224,6 +236,7 @@ graph
     DI--creates-->SQLAlchemyFitbitRepository
     DI--creates-->SQLAlchemyWithingsRepository
     DI--creates-->WebApiFitbitRepository
+    DI--creates-->WebApiGoogleRepository
     DI--creates-->WebApiWithingsRepository
     DI--creates-->WebhookSlackRepository
     DI--creates-->WebOpenAiRepository
@@ -239,18 +252,22 @@ graph
     SQLAlchemyWithingsRepository--implements-->LocalWithingsRepository
 
     WebApiFitbitRepository--implements-->RemoteFitbitRepository
+    WebApiGoogleRepository--implements-->RemoteGoogleRepository
     WebApiWithingsRepository--implements-->RemoteWithingsRepository
     WebhookSlackRepository--implements-->RemoteSlackRepository
     WebOpenAiRepository --implements-->RemoteOpenAiRepository
     OpenAiSdk{{OpenAISdk}}
     WebApiFitbitRepository-->FitbitApis
+    WebApiGoogleRepository-->GoogleApis
     WebApiWithingsRepository-->WithingsApis
     WebhookSlackRepository-->SlackApis
     WebOpenAiRepository-->OpenAiSdk
     FitbitApis--http--->FitbitWebServer
+    GoogleApis--http--->GoogleWebServer
     WithingsApis--http--->WithingsWebServer
     SlackApis--http--->SlackWebServer
     FitbitOAuth--http--->FitbitWebServer
+    GoogleOAuth--http--->GoogleWebServer
     WithingsOAuth--http--->WithingsWebServer
     OpenAiSdk--http--->OpenAiWebServer
 
