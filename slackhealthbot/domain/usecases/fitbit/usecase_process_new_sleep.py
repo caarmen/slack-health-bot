@@ -39,9 +39,10 @@ async def do(
         fitbit_userid=fitbit_userid,
         sleep=new_sleep_data,
     )
-    await usecase_post_sleep.do(
-        slack_alias=user_identity.slack_alias,
-        new_sleep_data=new_sleep_data,
-        last_sleep_data=last_sleep_data,
-    )
+    if last_sleep_data is None or last_sleep_data.end_time != new_sleep_data.end_time:
+        await usecase_post_sleep.do(
+            slack_alias=user_identity.slack_alias,
+            new_sleep_data=new_sleep_data,
+            last_sleep_data=last_sleep_data,
+        )
     return new_sleep_data
