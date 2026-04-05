@@ -11,6 +11,7 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
     UserIdentity,
 )
+from slackhealthbot.domain.models.users import HealthUserLookup, UserLookup
 from slackhealthbot.domain.usecases.fitbit import (
     usecase_process_new_activity,
     usecase_process_new_sleep,
@@ -21,34 +22,37 @@ from slackhealthbot.settings import Settings
 
 @dataclasses.dataclass
 class Cache:
-    cache_sleep_success: dict[str, datetime.date] = dataclasses.field(
+    cache_sleep_success: dict[UserLookup, datetime.date] = dataclasses.field(
         default_factory=dict
     )
-    cache_fail: dict[str, datetime.date] = dataclasses.field(default_factory=dict)
+    cache_fail: dict[UserLookup, datetime.date] = dataclasses.field(
+        default_factory=dict
+    )
 
 
 async def handle_success_poll(
-    fitbit_userid: str,
+    user_lookup: UserLookup,
     when: datetime.date,
     cache: Cache,
 ):
-    cache.cache_sleep_success[fitbit_userid] = when
-    cache.cache_fail.pop(fitbit_userid, None)
+    cache.cache_sleep_success[user_lookup] = when
+    cache.cache_fail.pop(user_lookup, None)
 
 
 async def handle_fail_poll(
-    fitbit_userid: str,
+    user_lookup: UserLookup,
     slack_alias: str,
     when: datetime.date,
     cache: Cache,
 ):
-    last_error_post = cache.cache_fail.get(fitbit_userid)
+    service = "google" if isinstance(user_lookup, HealthUserLookup) else "fitbit"
+    last_error_post = cache.cache_fail.get(user_lookup)
     if not last_error_post or last_error_post < when:
         await usecase_post_user_logged_out.do(
             slack_alias=slack_alias,
-            service="fitbit",
+            service=service,
         )
-        cache.cache_fail[fitbit_userid] = when
+        cache.cache_fail[user_lookup] = when
 
 
 async def fitbit_poll(
@@ -105,12 +109,12 @@ async def fitbit_poll_activity(
 ):
     try:
         await usecase_process_new_activity.do(
-            fitbit_userid=poll_target.user_identity.fitbit_userid,
+            user_lookup=poll_target.user_identity.user_lookup,
             when=poll_target.when,
         )
     except UserLoggedOutException:
         await handle_fail_poll(
-            fitbit_userid=poll_target.user_identity.fitbit_userid,
+            user_lookup=poll_target.user_identity.user_lookup,
             slack_alias=poll_target.user_identity.slack_alias,
             when=poll_target.when,
             cache=cache,
@@ -122,17 +126,17 @@ async def fitbit_poll_sleep(
     poll_target: PollTarget,
 ):
     latest_successful_poll = cache.cache_sleep_success.get(
-        poll_target.user_identity.fitbit_userid
+        poll_target.user_identity.user_lookup
     )
     if not latest_successful_poll or latest_successful_poll < poll_target.when:
         try:
             sleep_data = await usecase_process_new_sleep.do(
-                fitbit_userid=poll_target.user_identity.fitbit_userid,
+                user_lookup=poll_target.user_identity.user_lookup,
                 when=poll_target.when,
             )
         except UserLoggedOutException:
             await handle_fail_poll(
-                fitbit_userid=poll_target.user_identity.fitbit_userid,
+                user_lookup=poll_target.user_identity.user_lookup,
                 slack_alias=poll_target.user_identity.slack_alias,
                 when=poll_target.when,
                 cache=cache,
@@ -140,7 +144,7 @@ async def fitbit_poll_sleep(
         else:
             if sleep_data:
                 await handle_success_poll(
-                    fitbit_userid=poll_target.user_identity.fitbit_userid,
+                    user_lookup=poll_target.user_identity.user_lookup,
                     when=poll_target.when,
                     cache=cache,
                 )

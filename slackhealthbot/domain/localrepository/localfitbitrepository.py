@@ -9,12 +9,24 @@ from slackhealthbot.domain.models.activity import (
     TopActivityStats,
 )
 from slackhealthbot.domain.models.sleep import SleepData
+from slackhealthbot.domain.models.users import (
+    FitbitUserLookup,
+    HealthUserLookup,
+    UserLookup,
+)
 
 
 @dataclasses.dataclass
 class UserIdentity:
-    fitbit_userid: str
+    fitbit_userid: str | None
+    health_user_id: str | None
     slack_alias: str
+
+    @property
+    def user_lookup(self) -> UserLookup:
+        if self.health_user_id:
+            return HealthUserLookup(user_id=self.health_user_id)
+        return FitbitUserLookup(user_id=self.fitbit_userid)
 
 
 @dataclasses.dataclass
@@ -28,40 +40,39 @@ class LocalFitbitRepository(ABC):
     async def create_user(
         self,
         slack_alias: str,
-        fitbit_userid: str,
+        fitbit_user_id: str | None,
+        health_user_id: str | None,
         oauth_data: OAuthFields,
     ) -> User:
         pass
 
     @abstractmethod
-    async def get_user_identity_by_fitbit_userid(
+    async def get_user_identity(
         self,
-        fitbit_userid: str,
-    ) -> UserIdentity | None:
-        pass
+        user_lookup: UserLookup,
+    ) -> UserIdentity | None: ...
 
     @abstractmethod
     async def get_all_user_identities(self) -> list[UserIdentity]:
         pass
 
     @abstractmethod
-    async def get_oauth_data_by_fitbit_userid(
+    async def get_oauth_data_by_user_lookup(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
     ) -> OAuthFields:
         pass
 
     @abstractmethod
-    async def get_user_by_fitbit_userid(
+    async def get_user_by_lookup(
         self,
-        fitbit_userid: str,
-    ) -> User:
-        pass
+        user_lookup: UserLookup,
+    ) -> User: ...
 
     @abstractmethod
     async def get_latest_activity_by_user_and_type(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         type_id: int,
     ) -> ActivityData | None:
         pass
@@ -69,7 +80,7 @@ class LocalFitbitRepository(ABC):
     @abstractmethod
     async def get_activity_by_user_and_log_id(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         log_id: str,
     ) -> ActivityData | None:
         pass
@@ -77,7 +88,7 @@ class LocalFitbitRepository(ABC):
     @abstractmethod
     async def upsert_activity_for_user(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         activity: ActivityData,
     ) -> bool:
         """
@@ -88,17 +99,15 @@ class LocalFitbitRepository(ABC):
     @abstractmethod
     async def update_sleep_for_user(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         sleep: SleepData,
     ):
         pass
 
-    @abstractmethod
-    async def get_sleep_by_fitbit_userid(
+    async def get_sleep_by_user_lookup(
         self,
-        fitbit_userid: str,
-    ) -> SleepData | None:
-        pass
+        user_lookup: UserLookup,
+    ) -> SleepData | None: ...
 
     @abstractmethod
     async def update_oauth_data(
@@ -109,9 +118,21 @@ class LocalFitbitRepository(ABC):
         pass
 
     @abstractmethod
+    async def update_oauth_data_by_fitbit_user_id(
+        self,
+        fitbit_user_id: str,
+        oauth_data: OAuthFields,
+    ): ...
+
+    @abstractmethod
+    async def update_user_ids(
+        self, oauth_userid: str, fitbit_user_id: str | None, health_user_id: str | None
+    ): ...
+
+    @abstractmethod
     async def get_top_activity_stats_by_user_and_activity_type(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         type_id: int,
         since: datetime.datetime | None = None,
     ) -> TopActivityStats:
@@ -120,7 +141,7 @@ class LocalFitbitRepository(ABC):
     @abstractmethod
     async def get_latest_daily_activity_by_user_and_activity_type(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         primary_type_id: int,
         secondary_type_id: int | None = None,
         before: datetime.date | None = None,
@@ -134,7 +155,7 @@ class LocalFitbitRepository(ABC):
     @abstractmethod
     async def get_daily_activity_streak_days_count_for_user_and_activity_type(  # noqa: PLR0913
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         primary_type_id: int,
         *,
         secondary_type_id: int | None = None,
@@ -182,7 +203,7 @@ class LocalFitbitRepository(ABC):
     @abstractmethod
     async def get_top_daily_activity_stats_by_user_and_activity_type(
         self,
-        fitbit_userid: str,
+        user_lookup: UserLookup,
         type_id: int,
         since: datetime.datetime | None = None,
     ) -> TopActivityStats:

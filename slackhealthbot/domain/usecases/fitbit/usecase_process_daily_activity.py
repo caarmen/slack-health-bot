@@ -26,34 +26,31 @@ async def do(
     ],
 ):
     now = dt.datetime.now(dt.timezone.utc)
-    fitbit_userid = daily_activity.fitbit_userid
     streak_distance_km_days = await usecase_calculate_streak.do(
         local_fitbit_repo=local_fitbit_repo,
         daily_activity=daily_activity,
         end_date=now.date(),
     )
 
-    user_identity: UserIdentity = (
-        await local_fitbit_repo.get_user_identity_by_fitbit_userid(
-            fitbit_userid=fitbit_userid
-        )
+    user_identity: UserIdentity = await local_fitbit_repo.get_user_identity(
+        daily_activity.user_lookup,
     )
     previous_daily_activity_stats: DailyActivityStats = (
         await local_fitbit_repo.get_latest_daily_activity_by_user_and_activity_type(
-            fitbit_userid=fitbit_userid,
+            user_lookup=daily_activity.user_lookup,
             type_id=daily_activity.type_id,
             before=now.date(),
         )
     )
     all_time_top_daily_activity_stats: TopActivityStats = (
         await local_fitbit_repo.get_top_daily_activity_stats_by_user_and_activity_type(
-            fitbit_userid=fitbit_userid,
+            user_lookup=daily_activity.user_lookup,
             type_id=daily_activity.type_id,
         )
     )
     recent_top_daily_activity_stats: TopActivityStats = (
         await local_fitbit_repo.get_top_daily_activity_stats_by_user_and_activity_type(
-            fitbit_userid=fitbit_userid,
+            user_lookup=daily_activity.user_lookup,
             type_id=daily_activity.type_id,
             since=now
             - dt.timedelta(days=settings.app_settings.fitbit.activities.history_days),

@@ -63,6 +63,7 @@ class FitbitUserFactory(SQLAlchemyModelFactory):
     oauth_expiration_date = Faker("date_time")
     latest_activities = RelatedFactoryList(FitbitActivityFactory, "fitbit_user", size=0)
     fitbit_user_id = LazyAttribute(lambda o: o.oauth_userid)
+    health_user_id = None
 
 
 class UserFactory(SQLAlchemyModelFactory):

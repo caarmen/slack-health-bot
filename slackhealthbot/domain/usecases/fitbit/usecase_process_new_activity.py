@@ -5,6 +5,7 @@ from dependency_injector.wiring import Provide, inject
 from slackhealthbot.containers import Container
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
+    User,
     UserIdentity,
 )
 from slackhealthbot.domain.models.activity import (
@@ -12,6 +13,7 @@ from slackhealthbot.domain.models.activity import (
     ActivityHistory,
     TopActivityStats,
 )
+from slackhealthbot.domain.models.users import UserLookup
 from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
@@ -21,7 +23,7 @@ from slackhealthbot.settings import Settings
 
 @inject
 async def do(  # noqa: PLR0913 deal with this later
-    fitbit_userid: str,
+    user_lookup: UserLookup,
     when: datetime.date,
     settings: Settings = Provide[Container.settings],
     local_fitbit_repo: LocalFitbitRepository = Provide[
@@ -31,14 +33,8 @@ async def do(  # noqa: PLR0913 deal with this later
         Container.remote_fitbit_repository
     ],
 ) -> list[ActivityData]:
-    user_identity: UserIdentity = (
-        await local_fitbit_repo.get_user_identity_by_fitbit_userid(
-            fitbit_userid=fitbit_userid,
-        )
-    )
-    user = await local_fitbit_repo.get_user_by_fitbit_userid(
-        fitbit_userid=fitbit_userid,
-    )
+    user_identity: UserIdentity = await local_fitbit_repo.get_user_identity(user_lookup)
+    user: User = await local_fitbit_repo.get_user_by_lookup(user_lookup)
     activities = await remote_fitbit_repo.get_activities_for_date(
         oauth_fields=user.oauth_data,
         when=when,
@@ -58,7 +54,7 @@ async def do(  # noqa: PLR0913 deal with this later
             continue
 
         created = await local_fitbit_repo.upsert_activity_for_user(
-            fitbit_userid=fitbit_userid,
+            user_lookup=user_lookup,
             activity=new_activity_data,
         )
         if not created:
@@ -73,13 +69,13 @@ async def do(  # noqa: PLR0913 deal with this later
 
         all_time_top_activity_stats: TopActivityStats = (
             await local_fitbit_repo.get_top_activity_stats_by_user_and_activity_type(
-                fitbit_userid=fitbit_userid,
+                user_lookup=user_lookup,
                 type_id=new_activity_data.type_id,
             )
         )
         recent_top_activity_stats: TopActivityStats = (
             await local_fitbit_repo.get_top_activity_stats_by_user_and_activity_type(
-                fitbit_userid=fitbit_userid,
+                user_lookup=user_lookup,
                 type_id=new_activity_data.type_id,
                 since=recent_since,
             )
