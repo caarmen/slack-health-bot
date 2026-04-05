@@ -246,6 +246,40 @@ sleep_scenarios: dict[str, FitbitSleepScenario] = {
         ),
         expected_icons="⬇️.*⬇️.*⬇️.*⬇️",
     ),
+    "Same sleep log": FitbitSleepScenario(
+        # Previous sleep data exists.
+        # Newer values are the exact same sleep log
+        input_initial_sleep_data={
+            "last_sleep_start_time": datetime.datetime(2023, 5, 12, 1, 41, 0),
+            "last_sleep_end_time": datetime.datetime(2023, 5, 12, 10, 28, 0),
+            "last_sleep_sleep_minutes": 560,
+            "last_sleep_wake_minutes": 200,
+        },
+        input_mock_fitbit_response={
+            "sleep": [
+                {
+                    "startTime": "2023-05-12T01:41:00.000",
+                    "endTime": "2023-05-12T10:28:00.000",
+                    "duration": 31620000,
+                    "type": "classic",
+                    "isMainSleep": True,
+                    "levels": {
+                        "summary": {
+                            "asleep": {"minutes": 560},
+                            "awake": {"minutes": 200},
+                        },
+                    },
+                },
+            ]
+        },
+        expected_new_last_sleep_data=SleepData(
+            start_time=datetime.datetime(2023, 5, 12, 1, 41, 0),
+            end_time=datetime.datetime(2023, 5, 12, 10, 28, 0),
+            sleep_minutes=560,
+            wake_minutes=200,
+        ),
+        expected_icons=None,
+    ),
     "Invalid json response": FitbitSleepScenario(
         input_initial_sleep_data={
             "last_sleep_start_time": datetime.datetime(2023, 5, 12, 1, 41, 0),
