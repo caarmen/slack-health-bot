@@ -51,7 +51,6 @@ class Container(containers.DeclarativeContainer):
         modules=[
             "slackhealthbot.data.database.connection",
             "slackhealthbot.domain.usecases.fitbit.usecase_calculate_streak",
-            "slackhealthbot.domain.usecases.fitbit.usecase_get_last_activity",
             "slackhealthbot.domain.usecases.fitbit.usecase_get_last_sleep",
             "slackhealthbot.domain.usecases.fitbit.usecase_login_user",
             "slackhealthbot.domain.usecases.fitbit.usecase_post_user_logged_out",

@@ -43,16 +43,6 @@ class WebApiFitbitRepository(RemoteFitbitRepository):
         )
         return remote_service_sleep_to_domain_sleep(sleep) if sleep else None
 
-    async def get_activity(
-        self, oauth_fields: OAuthFields, when: datetime.datetime
-    ) -> tuple[str, ActivityData] | None:
-        activities: FitbitActivities | None = await activityapi.get_activity(
-            oauth_token=oauth_fields,
-            when=when,
-            settings=self.settings,
-        )
-        return remote_service_activity_to_domain_activity(activities)
-
     async def get_activities_for_date(
         self, oauth_fields: OAuthFields, when: datetime.date
     ) -> list[tuple[str, ActivityData]]:
