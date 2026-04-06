@@ -199,7 +199,9 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
     if scenario.expected_new_activity_created:
         assert repo_activity.log_id == scenario.expected_new_last_activity_log_id
     elif scenario.input_initial_activity_data:
-        assert repo_activity.log_id == scenario.input_initial_activity_data["log_id"]
+        assert repo_activity.log_id == str(
+            scenario.input_initial_activity_data["log_id"]
+        )
     else:
         assert not repo_activity
 
@@ -385,11 +387,11 @@ async def test_fitbit_poll_activity_upserts_all_activities(
     # Then all activities are upserted
     activity_1 = await local_fitbit_repository.get_activity_by_user_and_log_id(
         fitbit_userid=fitbit_user.oauth_userid,
-        log_id=2001,
+        log_id="2001",
     )
     activity_2 = await local_fitbit_repository.get_activity_by_user_and_log_id(
         fitbit_userid=fitbit_user.oauth_userid,
-        log_id=2002,
+        log_id="2002",
     )
 
     assert activity_1 is not None

@@ -70,7 +70,7 @@ class LocalFitbitRepository(ABC):
     async def get_activity_by_user_and_log_id(
         self,
         fitbit_userid: str,
-        log_id: int,
+        log_id: str,
     ) -> ActivityData | None:
         pass
 

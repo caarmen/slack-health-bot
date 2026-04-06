@@ -18,7 +18,7 @@ class ActivityZoneMinutes:
 
 @dataclasses.dataclass
 class ActivityData:
-    log_id: int
+    log_id: str
     type_id: int
     logged_at: dt.datetime
     total_minutes: int
