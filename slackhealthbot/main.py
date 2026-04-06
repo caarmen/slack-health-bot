@@ -13,12 +13,17 @@ from slackhealthbot.containers import Container
 from slackhealthbot.domain.usecases.fitbit.usecase_update_user_oauth import (
     UpdateTokenUseCase as FitbitUpdateTokenUseCase,
 )
+from slackhealthbot.domain.usecases.google.usecase_update_user_oauth import (
+    UpdateTokenUseCase as GoogleUpdateTokenUseCase,
+)
 from slackhealthbot.domain.usecases.withings.usecase_update_user_oauth import (
     UpdateTokenUseCase as WithingsUpdateTokenUseCase,
 )
 from slackhealthbot.oauth import fitbitconfig as oauth_fitbit
+from slackhealthbot.oauth import googleconfig as oauth_google
 from slackhealthbot.oauth import withingsconfig as oauth_withings
 from slackhealthbot.routers.fitbit import router as fitbit_router
+from slackhealthbot.routers.google import router as google_router
 from slackhealthbot.routers.withings import router as withings_router
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks import fitbitpoll
@@ -31,6 +36,7 @@ async def lifespan(_app: FastAPI):
     logger.configure_logging(settings.app_settings.logging.sql_log_level)
     oauth_withings.configure(WithingsUpdateTokenUseCase())
     oauth_fitbit.configure(FitbitUpdateTokenUseCase())
+    oauth_google.configure(GoogleUpdateTokenUseCase())
     schedule_task = None
     if settings.app_settings.fitbit.poll.enabled:
         schedule_task = await fitbitpoll.schedule_fitbit_poll(
@@ -68,6 +74,7 @@ app = FastAPI(
 app.container = container
 app.include_router(withings_router)
 app.include_router(fitbit_router)
+app.include_router(google_router)
 
 
 @app.head("/")

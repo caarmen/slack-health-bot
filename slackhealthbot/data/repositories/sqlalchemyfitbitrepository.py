@@ -348,6 +348,22 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         )
         await self.db.commit()
 
+    async def update_token_by_refresh_token(
+        self,
+        refresh_token: str,
+        new_access_token: str,
+        new_expiration_date: datetime.datetime,
+    ):
+        await self.db.execute(
+            statement=update(models.FitbitUser)
+            .where(models.FitbitUser.oauth_refresh_token == refresh_token)
+            .values(
+                oauth_access_token=new_access_token,
+                oauth_expiration_date=new_expiration_date,
+            )
+        )
+        await self.db.commit()
+
     async def get_top_activity_stats_by_user_and_activity_type(
         self,
         user_lookup: UserLookup,

@@ -130,6 +130,14 @@ class LocalFitbitRepository(ABC):
     ): ...
 
     @abstractmethod
+    async def update_token_by_refresh_token(
+        self,
+        refresh_token: str,
+        new_access_token: str,
+        new_expiration_date: datetime.datetime,
+    ): ...
+
+    @abstractmethod
     async def get_top_activity_stats_by_user_and_activity_type(
         self,
         user_lookup: UserLookup,

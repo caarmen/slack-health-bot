@@ -11,6 +11,9 @@ logging:
 withings:
   callback_url: "http://localhost:8000/" # The url that withings will call at the end of SSO.
 
+google:
+  callback_url: "http://localhost:8000/"
+
 # Fitbit-specific configuration:
 # Note that secrets like the client id and client secret are configured in the .env file.
 fitbit:
