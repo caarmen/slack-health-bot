@@ -17,6 +17,7 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     UserIdentity,
 )
 from slackhealthbot.domain.models.activity import ActivityData
+from slackhealthbot.domain.models.users import FitbitUserLookup
 from slackhealthbot.settings import Settings
 from tests.testsupport.factories.factories import (
     FitbitActivityFactory,
@@ -104,8 +105,8 @@ async def test_refresh_token_ok(
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid
+    repo_user = await local_fitbit_repository.get_user_by_lookup(
+        FitbitUserLookup(user_id=fitbit_user.oauth_userid)
     )
 
     # Then the access token is refreshed.
@@ -121,7 +122,7 @@ async def test_refresh_token_ok(
     # And the latest activity data is updated in the database
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=repo_user.identity.fitbit_userid,
+            user_lookup=repo_user.identity.user_lookup,
             type_id=activity_type_id,
         )
     )
@@ -207,8 +208,8 @@ async def test_refresh_token_fail(
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid
+    repo_user = await local_fitbit_repository.get_user_by_lookup(
+        FitbitUserLookup(user_id=fitbit_user.oauth_userid)
     )
 
     # Then the access token is not refreshed.
@@ -218,7 +219,7 @@ async def test_refresh_token_fail(
     # And no new activity data is updated in the database
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=repo_user.identity.fitbit_userid,
+            user_lookup=repo_user.identity.user_lookup,
             type_id=activity_type_id,
         )
     )
@@ -315,11 +316,12 @@ async def test_login_success(
     assert response.status_code == status.HTTP_200_OK
 
     # Verify that we have the expected data in the db
-    repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-        "user123",
+    repo_user = await local_fitbit_repository.get_user_by_lookup(
+        FitbitUserLookup(user_id="user123")
     )
     assert repo_user.identity == UserIdentity(
         fitbit_userid="user123",
+        health_user_id=None,
         slack_alias="jdoe",
     )
 
@@ -395,8 +397,8 @@ async def test_logged_out(
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid
+    repo_user = await local_fitbit_repository.get_user_by_lookup(
+        FitbitUserLookup(user_id=fitbit_user.oauth_userid)
     )
 
     # Then the access token is not refreshed.
@@ -406,7 +408,7 @@ async def test_logged_out(
     # And no new activity data is updated in the database
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=repo_user.identity.fitbit_userid,
+            user_lookup=repo_user.identity.user_lookup,
             type_id=activity_type_id,
         )
     )

@@ -93,8 +93,8 @@ async def test_fitbit_poll_sleep(  # noqa: PLR0913
         )
 
     # Then the last sleep data is updated in the database
-    actual_last_sleep_data = await local_fitbit_repository.get_sleep_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid,
+    actual_last_sleep_data = await local_fitbit_repository.get_sleep_by_user_lookup(
+        user_lookup=fitbit_user.lookup,
     )
     assert actual_last_sleep_data == scenario.expected_new_last_sleep_data
 
@@ -192,7 +192,7 @@ async def test_fitbit_poll_activity(  # noqa PLR0913
     # Then the latest activity data is updated in the database
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=fitbit_user.oauth_userid,
+            user_lookup=fitbit_user.lookup,
             type_id=activity_type_id,
         )
     )
@@ -274,15 +274,15 @@ async def test_schedule_fitbit_poll(  # noqa: PLR0913
     )
     await asyncio.sleep(1)
     # Then the last sleep data is updated in the database
-    actual_last_sleep_data = await local_fitbit_repository.get_sleep_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid,
+    actual_last_sleep_data = await local_fitbit_repository.get_sleep_by_user_lookup(
+        user_lookup=fitbit_user.lookup,
     )
     assert actual_last_sleep_data == sleep_scenario.expected_new_last_sleep_data
 
     # Then the latest activity data is updated in the database
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=fitbit_user.oauth_userid,
+            user_lookup=fitbit_user.lookup,
             type_id=55001,
         )
     )
@@ -386,11 +386,11 @@ async def test_fitbit_poll_activity_upserts_all_activities(
 
     # Then all activities are upserted
     activity_1 = await local_fitbit_repository.get_activity_by_user_and_log_id(
-        fitbit_userid=fitbit_user.oauth_userid,
+        user_lookup=fitbit_user.lookup,
         log_id="2001",
     )
     activity_2 = await local_fitbit_repository.get_activity_by_user_and_log_id(
-        fitbit_userid=fitbit_user.oauth_userid,
+        user_lookup=fitbit_user.lookup,
         log_id="2002",
     )
 

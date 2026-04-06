@@ -132,7 +132,7 @@ async def test_top_activities(
 
     all_time_top_activity_stats: TopActivityStats = (
         await local_fitbit_repository.get_top_activity_stats_by_user_and_activity_type(
-            fitbit_userid=user.fitbit.oauth_userid,
+            user_lookup=user.fitbit.lookup,
             type_id=activity_type,
         )
     )
@@ -158,7 +158,7 @@ async def test_top_activities(
 
     recent_top_activity_stats: TopActivityStats = (
         await local_fitbit_repository.get_top_activity_stats_by_user_and_activity_type(
-            fitbit_userid=user.fitbit.oauth_userid,
+            user_lookup=user.fitbit.lookup,
             type_id=activity_type,
             since=recent_date - datetime.timedelta(days=1),
         )
@@ -196,7 +196,7 @@ async def test_top_activities_no_history(
 
     all_time_top_activity_stats: TopActivityStats = (
         await local_fitbit_repository.get_top_activity_stats_by_user_and_activity_type(
-            fitbit_userid=user.fitbit.oauth_userid,
+            user_lookup=user.fitbit.lookup,
             type_id=activity_type,
         )
     )
@@ -209,7 +209,7 @@ async def test_top_activities_no_history(
 
     recent_top_activity_stats: TopActivityStats = (
         await local_fitbit_repository.get_top_activity_stats_by_user_and_activity_type(
-            fitbit_userid=user.fitbit.oauth_userid,
+            user_lookup=user.fitbit.lookup,
             type_id=activity_type,
             since=recent_date - datetime.timedelta(days=1),
         )
@@ -268,7 +268,7 @@ async def test_daily_activities_one_entry(
     expected_daily_activity_stats = [
         DailyActivityStats(
             date=datetime.date(2024, 1, 2),
-            fitbit_userid=user.fitbit.oauth_userid,
+            user_lookup=user.fitbit.lookup,
             slack_alias="jondoe",
             type_id=1234,
             count_activities=2,
@@ -380,7 +380,7 @@ async def test_daily_activities_multiple_entries(
     # Get the list of daily activity stats just one user and activity type.
     actual_daily_activity_stats_one_user_and_type: DailyActivityStats = (
         await local_fitbit_repository.get_latest_daily_activity_by_user_and_activity_type(
-            fitbit_userid=user1.fitbit.oauth_userid,
+            user_lookup=user1.fitbit.lookup,
             type_id=1235,
             before=datetime.date(2024, 1, 4),
         )
@@ -398,7 +398,7 @@ async def test_daily_activities_multiple_entries(
     # Get the list of daily activity stats just one user and activity type, with no match.
     actual_daily_activity_stats_one_user_and_type: DailyActivityStats = (
         await local_fitbit_repository.get_latest_daily_activity_by_user_and_activity_type(
-            fitbit_userid=user1.fitbit.oauth_userid,
+            user_lookup=user1.fitbit.lookup,
             type_id=1235,
             before=datetime.date(2024, 1, 2),
         )
@@ -511,7 +511,7 @@ async def test_top_daily_activities(
 
     actual_top_daily_activities_all_time: TopDailyActivityStats = (
         await local_fitbit_repository.get_top_daily_activity_stats_by_user_and_activity_type(
-            fitbit_userid=user.fitbit.oauth_userid,
+            user_lookup=user.fitbit.lookup,
             type_id=activity_type,
         )
     )
@@ -530,7 +530,7 @@ async def test_top_daily_activities(
 
     actual_top_daily_activities_recent_times: TopActivityStats = (
         await local_fitbit_repository.get_top_daily_activity_stats_by_user_and_activity_type(
-            fitbit_userid=user.fitbit.oauth_userid,
+            user_lookup=user.fitbit.lookup,
             type_id=activity_type,
             since=recent_date - datetime.timedelta(days=1),
         )

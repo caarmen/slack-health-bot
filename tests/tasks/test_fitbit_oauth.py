@@ -14,6 +14,7 @@ from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
 )
 from slackhealthbot.domain.models.activity import ActivityData
+from slackhealthbot.domain.models.users import FitbitUserLookup
 from slackhealthbot.settings import Settings
 from slackhealthbot.tasks.fitbitpoll import Cache, do_poll
 from tests.testsupport.factories.factories import (
@@ -100,8 +101,8 @@ async def test_refresh_token_ok(  # noqa: PLR0913
             when=datetime.date(2023, 1, 23),
         )
 
-        repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-            fitbit_userid=fitbit_user.oauth_userid
+        repo_user = await local_fitbit_repository.get_user_by_lookup(
+            FitbitUserLookup(user_id=fitbit_user.oauth_userid)
         )
 
         # Then the access token is refreshed.
@@ -117,7 +118,7 @@ async def test_refresh_token_ok(  # noqa: PLR0913
         # And the latest activity data is updated in the database
         repo_activity: ActivityData = (
             await local_fitbit_repository.get_latest_activity_by_user_and_type(
-                fitbit_userid=repo_user.identity.fitbit_userid,
+                user_lookup=repo_user.identity.user_lookup,
                 type_id=activity_type_id,
             )
         )
@@ -196,8 +197,8 @@ async def test_refresh_token_fail(  # noqa: PLR0913
             when=datetime.date(2023, 1, 23),
         )
 
-    repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid
+    repo_user = await local_fitbit_repository.get_user_by_lookup(
+        FitbitUserLookup(user_id=fitbit_user.oauth_userid)
     )
 
     # Then the access token is not refreshed.
@@ -208,7 +209,7 @@ async def test_refresh_token_fail(  # noqa: PLR0913
     # And no new activity data is updated in the database
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=repo_user.identity.fitbit_userid,
+            user_lookup=repo_user.identity.user_lookup,
             type_id=activity_type_id,
         )
     )
@@ -307,8 +308,8 @@ async def test_logged_out(  # noqa: PLR0913
             when=datetime.date(2023, 1, 23),
         )
 
-    repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid
+    repo_user = await local_fitbit_repository.get_user_by_lookup(
+        FitbitUserLookup(user_id=fitbit_user.oauth_userid)
     )
 
     # Then the access token is not refreshed.
@@ -318,7 +319,7 @@ async def test_logged_out(  # noqa: PLR0913
     # And no new activity data is updated in the database
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=repo_user.identity.fitbit_userid,
+            user_lookup=repo_user.identity.user_lookup,
             type_id=activity_type_id,
         )
     )

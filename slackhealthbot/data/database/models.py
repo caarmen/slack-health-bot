@@ -5,6 +5,12 @@ from typing import Optional
 from sqlalchemy import Float, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
+from slackhealthbot.domain.models.users import (
+    FitbitUserLookup,
+    HealthUserLookup,
+    UserLookup,
+)
+
 Base = declarative_base()
 
 
@@ -53,10 +59,20 @@ class FitbitUser(TimestampMixin, Base):
     oauth_refresh_token: Mapped[Optional[str]] = mapped_column(String(512))
     oauth_userid: Mapped[str] = mapped_column(String(40))
     oauth_expiration_date: Mapped[Optional[datetime]] = mapped_column()
+    fitbit_user_id: Mapped[Optional[str]] = mapped_column(String(40))
+    health_user_id: Mapped[Optional[str]] = mapped_column(String(63))
     last_sleep_start_time: Mapped[Optional[datetime]] = mapped_column()
     last_sleep_end_time: Mapped[Optional[datetime]] = mapped_column()
     last_sleep_sleep_minutes: Mapped[Optional[int]] = mapped_column()
     last_sleep_wake_minutes: Mapped[Optional[int]] = mapped_column()
+
+    @property
+    def lookup(self) -> UserLookup:
+        if self.health_user_id:
+            return HealthUserLookup(user_id=self.health_user_id)
+        # We should have a fitbit_user_id if we don't have a health_user_id.
+        # No need to handle the case where both are None. Shouldn't happen!
+        return FitbitUserLookup(user_id=self.fitbit_user_id)
 
 
 class FitbitActivity(TimestampMixin, Base):

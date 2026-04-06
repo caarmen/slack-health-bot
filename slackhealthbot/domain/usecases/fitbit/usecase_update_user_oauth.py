@@ -32,6 +32,6 @@ class UpdateTokenUseCase(Callable):
     ):
         oauth_fields: OAuthFields = self.remote_repo.parse_oauth_fields(token)
         await local_repo.update_oauth_data(
-            fitbit_userid=oauth_fields.oauth_userid,
+            oauth_userid=oauth_fields.oauth_userid,
             oauth_data=oauth_fields,
         )

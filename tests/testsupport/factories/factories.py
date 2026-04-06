@@ -1,6 +1,13 @@
 import datetime as dt
 
-from factory import Faker, RelatedFactoryList, SelfAttribute, Sequence, SubFactory
+from factory import (
+    Faker,
+    LazyAttribute,
+    RelatedFactoryList,
+    SelfAttribute,
+    Sequence,
+    SubFactory,
+)
 from factory.alchemy import SQLAlchemyModelFactory
 
 from slackhealthbot.data.database.models import (
@@ -55,6 +62,8 @@ class FitbitUserFactory(SQLAlchemyModelFactory):
     oauth_userid = Faker("pystr")
     oauth_expiration_date = Faker("date_time")
     latest_activities = RelatedFactoryList(FitbitActivityFactory, "fitbit_user", size=0)
+    fitbit_user_id = LazyAttribute(lambda o: o.oauth_userid)
+    health_user_id = None
 
 
 class UserFactory(SQLAlchemyModelFactory):

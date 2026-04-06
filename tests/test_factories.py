@@ -20,6 +20,7 @@ from slackhealthbot.domain.models.activity import (
     ActivityZone,
     ActivityZoneMinutes,
 )
+from slackhealthbot.domain.models.users import FitbitUserLookup
 from tests.testsupport.factories.factories import (
     FitbitActivityFactory,
     FitbitUserFactory,
@@ -91,8 +92,8 @@ async def test_fitbit_user_factory(
     assert isinstance(fitbit_user.oauth_expiration_date, datetime)
     assert isinstance(user, User)
 
-    repo_user = await local_fitbit_repository.get_user_by_fitbit_userid(
-        fitbit_userid=fitbit_user.oauth_userid
+    repo_user = await local_fitbit_repository.get_user_by_lookup(
+        FitbitUserLookup(user_id=fitbit_user.oauth_userid)
     )
     assert repo_user.oauth_data.oauth_access_token == fitbit_user.oauth_access_token
     assert repo_user.oauth_data.oauth_refresh_token == fitbit_user.oauth_refresh_token
@@ -117,7 +118,7 @@ async def test_fitbit_activity_factory(
     )
     repo_activity: ActivityData = (
         await local_fitbit_repository.get_latest_activity_by_user_and_type(
-            fitbit_userid=fitbit_user.oauth_userid,
+            user_lookup=fitbit_user.lookup,
             type_id=fitbit_activity.type_id,
         )
     )

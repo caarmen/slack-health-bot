@@ -30,7 +30,6 @@ async def do(
 
     If we have a goal and we didn't meet it at the given date, there's no streak: return None.
     """
-    fitbit_userid = daily_activity.fitbit_userid
     report_settings = settings.app_settings.fitbit.activities.get_report(
         activity_type_id=daily_activity.type_id
     )
@@ -40,7 +39,7 @@ async def do(
 
     # Return the number of days since the first day in the streak, including the given end_date.
     return await local_fitbit_repo.get_daily_activity_streak_days_count_for_user_and_activity_type(
-        fitbit_userid=fitbit_userid,
+        user_lookup=daily_activity.user_lookup,
         primary_type_id=daily_activity.type_id,
         secondary_type_id=report_settings.streak.secondary_activity_type_id,
         before=end_date,

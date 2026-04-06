@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from slackhealthbot.containers import Container
 from slackhealthbot.core.exceptions import UnknownUserException, UserLoggedOutException
+from slackhealthbot.domain.models.users import FitbitUserLookup
 from slackhealthbot.domain.usecases.fitbit import (
     usecase_login_user,
     usecase_post_user_logged_out,
@@ -117,21 +118,21 @@ async def fitbit_notification_webhook(
             try:
                 if notification.collectionType == "sleep":
                     new_sleep_data = await usecase_process_new_sleep.do(
-                        fitbit_userid=notification.ownerId,
+                        user_lookup=FitbitUserLookup(user_id=notification.ownerId),
                         when=notification.date,
                     )
                     if new_sleep_data:
                         _mark_fitbit_notification_processed(notification)
                 elif notification.collectionType == "activities":
                     activity_history = await usecase_process_new_activity.do(
-                        fitbit_userid=notification.ownerId,
+                        user_lookup=FitbitUserLookup(user_id=notification.ownerId),
                         when=notification.date or datetime.date.today(),
                     )
                     if activity_history:
                         _mark_fitbit_notification_processed(notification)
             except UserLoggedOutException:
                 await usecase_post_user_logged_out.do(
-                    fitbit_userid=notification.ownerId,
+                    FitbitUserLookup(user_id=notification.ownerId),
                 )
                 break
             except UnknownUserException:

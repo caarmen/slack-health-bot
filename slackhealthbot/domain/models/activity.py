@@ -2,6 +2,8 @@ import dataclasses
 import datetime as dt
 from enum import StrEnum, auto
 
+from slackhealthbot.domain.models.users import UserLookup
+
 
 class ActivityZone(StrEnum):
     PEAK = auto()
@@ -45,7 +47,7 @@ class ActivityHistory:
 @dataclasses.dataclass
 class DailyActivityStats:
     date: dt.date
-    fitbit_userid: int
+    user_lookup: UserLookup
     slack_alias: str
     type_id: int
     count_activities: int
