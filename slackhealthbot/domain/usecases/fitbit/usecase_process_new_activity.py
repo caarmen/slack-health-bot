@@ -17,6 +17,9 @@ from slackhealthbot.domain.models.users import UserLookup
 from slackhealthbot.domain.remoterepository.remotefitbitrepository import (
     RemoteFitbitRepository,
 )
+from slackhealthbot.domain.remoterepository.remotegooglerepository import (
+    RemoteGoogleRepository,
+)
 from slackhealthbot.domain.usecases.slack import usecase_post_activity
 from slackhealthbot.settings import Settings
 
@@ -32,13 +35,22 @@ async def do(  # noqa: PLR0913 deal with this later
     remote_fitbit_repo: RemoteFitbitRepository = Provide[
         Container.remote_fitbit_repository
     ],
+    remote_google_repo: RemoteGoogleRepository = Provide[
+        Container.remote_google_repository
+    ],
 ) -> list[ActivityData]:
     user_identity: UserIdentity = await local_fitbit_repo.get_user_identity(user_lookup)
     user: User = await local_fitbit_repo.get_user_by_lookup(user_lookup)
-    activities = await remote_fitbit_repo.get_activities_for_date(
-        oauth_fields=user.oauth_data,
-        when=when,
-    )
+    if user.identity.health_user_id is not None:
+        activities = await remote_google_repo.get_activities_for_date(
+            oauth_fields=user.oauth_data,
+            when=when,
+        )
+    else:
+        activities = await remote_fitbit_repo.get_activities_for_date(
+            oauth_fields=user.oauth_data,
+            when=when,
+        )
     if not activities:
         return []
 
