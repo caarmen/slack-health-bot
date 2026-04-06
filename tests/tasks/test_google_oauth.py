@@ -1,4 +1,6 @@
 import datetime
+import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -139,3 +141,84 @@ async def test_refresh_token_ok(  # noqa: PLR0913
 
     # And a message was sent to slack
     assert slack_request.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_logged_out(  # noqa: PLR0913
+    local_fitbit_repository: LocalFitbitRepository,
+    client: TestClient,
+    respx_mock: MockRouter,
+    fitbit_factories: tuple[UserFactory, FitbitUserFactory, FitbitActivityFactory],
+    settings: Settings,
+):
+    """
+    Given a user whose access token is invalid
+    When we poll google for new data
+    Then no sleep is updated in the database
+    And a message is posted to slack about the user being logged out
+    """
+
+    user_factory, fitbit_user_factory, _ = fitbit_factories
+
+    # Given a user
+    user: User = user_factory.create(fitbit=None, slack_alias="jdoe")
+    fitbit_user: FitbitUser = fitbit_user_factory.create(
+        user_id=user.id,
+        health_user_id="healthuser123",
+        oauth_access_token="some invalid access token",
+        last_sleep_sleep_minutes=None,
+        oauth_expiration_date=datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(days=1),
+    )
+
+    respx_mock.get(settings.google_oauth_settings.oidc_url).pass_through()
+    # Mock google endpoints to return an unauthorized error
+    unauthorized_payload = {
+        "error": {
+            "code": 401,
+            "message": "Request had invalid authentication credentials. Expected OAuth 2 access token, login ...m/identity/sign-in/web/devconsole-project.",
+            "status": "UNAUTHENTICATED",
+        }
+    }
+    respx_mock.get(
+        url=f"{settings.google_oauth_settings.base_url}/v4/users/me/dataTypes/sleep/dataPoints",
+    ).mock(Response(status_code=401, json=unauthorized_payload))
+    google_activity_request = respx_mock.get(
+        url=f"{settings.google_oauth_settings.base_url}/v4/users/me/dataTypes/exercise/dataPoints",
+    ).mock(Response(status_code=401, json=unauthorized_payload))
+
+    # Mock an empty ok response from the slack webhook
+    slack_request = respx_mock.post(
+        f"{settings.secret_settings.slack_webhook_url}"
+    ).mock(return_value=Response(200))
+
+    # When we poll for new data
+    # Use the client as a context manager so that the app lifespan hook is called
+    # https://fastapi.tiangolo.com/advanced/testing-events/
+    with client:
+        await do_poll(
+            local_fitbit_repo=local_fitbit_repository,
+            cache=Cache(),
+            when=datetime.date(2023, 1, 23),
+        )
+
+    repo_user = await local_fitbit_repository.get_user_by_lookup(fitbit_user.lookup)
+
+    # Then the access token is not refreshed.
+    assert google_activity_request.call_count == 1
+    assert repo_user.oauth_data.oauth_access_token == "some invalid access token"
+
+    # And no new sleep data is updated in the database
+    sleep_data = await local_fitbit_repository.get_sleep_by_user_lookup(
+        fitbit_user.lookup
+    )
+    assert sleep_data is None
+
+    # And a message was sent to slack about the user being logged out
+    assert slack_request.call_count == 1
+    actual_message = json.loads(slack_request.calls[0].request.content)["text"].replace(
+        "\n", ""
+    )
+    assert re.search(
+        "Oh no <@jdoe>, looks like you were logged out of google! 😳.", actual_message
+    )
