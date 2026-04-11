@@ -1,6 +1,7 @@
 import datetime as dt
 import json
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from fastapi import status
@@ -18,6 +19,7 @@ from slackhealthbot.domain.models.activity import (
     ActivityZoneMinutes,
 )
 from slackhealthbot.domain.models.sleep import SleepData
+from slackhealthbot.domain.usecases.google import usecase_process_new_data
 from slackhealthbot.settings import Settings
 from tests.testsupport.factories.factories import FitbitUserFactory, UserFactory
 
@@ -346,7 +348,10 @@ def test_ignore_unsupported_operation(
         url=f"{settings.google_oauth_settings.base_url}/v4/users/me/dataTypes/exercise/dataPoints",
     ).mock(Response(status_code=200, json={}))
 
-    with client:
+    with client, patch(
+        "slackhealthbot.domain.usecases.google.usecase_process_new_data.do",
+        wraps=usecase_process_new_data.do,
+    ) as spy_task:
         response = client.post(
             "/google-notification-webhook/",
             headers=authorization_headers,
@@ -365,6 +370,10 @@ def test_ignore_unsupported_operation(
                 }
             },
         )
+    # Verify that the processing had no side-effect for the right reason:
+    # ie, the task was not called
+    # and not some bug where the task was called and just didn't process the data correctly
+    spy_task.assert_not_awaited()
 
     # Then the webhook returns a successful response,
     assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -408,7 +417,10 @@ def test_ignore_unsupported_data_type(
         url=f"{settings.google_oauth_settings.base_url}/v4/users/me/dataTypes/sleep/dataPoints",
     ).mock(Response(status_code=200, json={}))
 
-    with client:
+    with client, patch(
+        "slackhealthbot.domain.usecases.google.usecase_process_new_data.do",
+        wraps=usecase_process_new_data.do,
+    ) as spy_task:
         response = client.post(
             "/google-notification-webhook/",
             headers=authorization_headers,
@@ -427,6 +439,11 @@ def test_ignore_unsupported_data_type(
                 }
             },
         )
+
+    # Verify that the processing had no side-effect for the right reason:
+    # ie, the task was not called
+    # and not some bug where the task was called and just didn't process the data correctly
+    spy_task.assert_not_awaited()
 
     # Then the webhook returns a successful response,
     assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -467,7 +484,11 @@ def test_unknown_user(
         url=f"{settings.google_oauth_settings.base_url}/v4/users/me/dataTypes/sleep/dataPoints",
     ).mock(Response(status_code=200, json={}))
 
-    with client:
+    with client, patch(
+        "slackhealthbot.domain.usecases.google.usecase_process_new_data.do",
+        wraps=usecase_process_new_data.do,
+    ) as spy_task:
+
         response = client.post(
             "/google-notification-webhook/",
             headers=authorization_headers,
@@ -486,6 +507,10 @@ def test_unknown_user(
                 }
             },
         )
+    # Verify that the processing had no side-effect for the right reason:
+    # ie, the task was called and realized the user was unknown,
+    # and not some bug where the task wasn't even called.
+    spy_task.assert_awaited_once()
 
     # Then the webhook returns a successful response,
     assert response.status_code == status.HTTP_204_NO_CONTENT

@@ -4,20 +4,23 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict
 
 from slackhealthbot.containers import Container
-from slackhealthbot.core.exceptions import UnknownUserException, UserLoggedOutException
 from slackhealthbot.domain.models.users import HealthUserLookup
-from slackhealthbot.domain.usecases.fitbit import (
-    usecase_post_user_logged_out,
-    usecase_process_new_activity,
-    usecase_process_new_sleep,
-)
 from slackhealthbot.domain.usecases.google import (
     usecase_login_user,
+    usecase_process_new_data,
 )
 from slackhealthbot.oauth.config import oauth
 from slackhealthbot.routers.dependencies import (
@@ -126,6 +129,7 @@ async def google_oauth_webhook(
 @inject
 async def google_notification_webhook(
     notification: Notification,
+    background_tasks: BackgroundTasks,
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     secret_settings: SecretSettings = Depends(Provide[Container.secret_settings]),
 ):
@@ -150,34 +154,36 @@ async def google_notification_webhook(
         return Response(status_code=status.HTTP_200_OK)
     # else: notification is a DataNotification
 
-    # Handle a webhook call for a data notification.
-    if notification.data.operation != NotificationOperation.UPSERT:
+    data_notification: DataNotification = notification
+
+    # Cases we don't handle:
+    if (
+        # Unsupported operation:
+        data_notification.data.operation
+        != NotificationOperation.UPSERT
+    ) or (
+        # Unsupported data type:
+        data_notification.data.dataType
+        not in NotificationDataType
+    ):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    user_lookup = HealthUserLookup(user_id=notification.data.healthUserId)
-
-    notification_dates: set[dt.date] = {
-        x.civilIso8601TimeInterval.startTime.date() for x in notification.data.intervals
-    }
-
-    # Determine use case, based on the type of data
-    match notification.data.dataType:
-        case NotificationDataType.exercise | NotificationDataType.distance:
-            usecase = usecase_process_new_activity
-        case NotificationDataType.sleep:
-            usecase = usecase_process_new_sleep
-        case _:
-            logging.info(f"Unsupported data type {notification.data.dataType}")
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    try:
-        # The webhook notification data may contain several dates of health data.
-        # Fetch the data for each date.
-        for when in notification_dates:
-            await usecase.do(user_lookup=user_lookup, when=when)
-
-    except UserLoggedOutException:
-        await usecase_post_user_logged_out.do(user_lookup)
-    except UnknownUserException:
-        logging.info("google_notification_webhook: unknown user")
+    # Fetch the data for this notification in a background task, so
+    # we can return the http response immediately.
+    # https://developers.google.com/health/webhooks#respond_to_a_notification
+    background_tasks.add_task(
+        usecase_process_new_data.do,
+        data_type=(
+            usecase_process_new_data.DataType.SLEEP
+            if data_notification.data.dataType == NotificationDataType.sleep
+            # If it's not sleep, it's either distance or exercise google data types.
+            # Changes to distance require refreshing exercise data.
+            else usecase_process_new_data.DataType.EXERCISE
+        ),
+        user_lookup=HealthUserLookup(user_id=data_notification.data.healthUserId),
+        dates={
+            x.civilIso8601TimeInterval.startTime.date()
+            for x in data_notification.data.intervals
+        },
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
