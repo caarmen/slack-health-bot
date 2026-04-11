@@ -1,2 +1,7 @@
 [lint]
 select = ["E4", "E7", "E9", "F", "PL"]
+
+[lint.per-file-ignores]
+"tests/**" = [
+    "PLR0913", # In tests we often need more than 5 fixture arguments.
+]

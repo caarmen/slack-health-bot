@@ -237,6 +237,7 @@ class SecretSettings(BaseSettings):
     fitbit_client_subscriber_verification_code: str
     google_client_id: str
     google_client_secret: str
+    google_webhook_authorization_token: str
     slack_webhook_url: HttpUrl
     openai_api_key: str | None = None
     session_secret_key: str = "".join(
