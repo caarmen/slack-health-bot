@@ -144,6 +144,10 @@ async def get_activities_for_date(
     logging.info(f"Google health distance response: {distance_response.json()}")
     distances = HealthActivities.model_validate(distance_response.json())
 
+    # Note: we COULD try to be clever and reduce the number of iterations here, especially given
+    # that exercises and distances are already ordered chronologically (based on the api documentation).
+    # But such optimization (as in the previous commit) would not only make the code harder to read,
+    # it would also poorly handle scenarios like exercises overlapping in time.
     for exercise_data_point in exercises.dataPoints:
         exercise = exercise_data_point.exercise
         if exercise.metricsSummary.distanceMillimeters is None:

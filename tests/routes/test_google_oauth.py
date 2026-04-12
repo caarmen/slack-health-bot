@@ -1,4 +1,7 @@
 import dataclasses
+import datetime as dt
+import json
+import re
 
 import pytest
 from authlib.integrations.starlette_client.apps import StarletteOAuth2App
@@ -6,14 +9,16 @@ from fastapi import status
 from fastapi.responses import RedirectResponse
 from fastapi.testclient import TestClient
 from httpx import Response
+from respx import MockRouter
 
-from slackhealthbot.data.database.models import User
+from slackhealthbot.data.database.models import FitbitUser, User
 from slackhealthbot.domain.localrepository.localfitbitrepository import (
     LocalFitbitRepository,
     UserIdentity,
 )
 from slackhealthbot.domain.models.users import HealthUserLookup
 from slackhealthbot.remoteservices.api.google.identityapi import Identity
+from slackhealthbot.settings import Settings
 from tests.testsupport.factories.factories import (
     FitbitActivityFactory,
     FitbitUserFactory,
@@ -216,3 +221,85 @@ async def test_login_success(
 
     assert repo_user.oauth_data.oauth_access_token == "some access token"
     assert repo_user.oauth_data.oauth_refresh_token == "some refresh token"
+
+
+@pytest.mark.asyncio
+async def test_logged_out(
+    client: TestClient,
+    respx_mock: MockRouter,
+    user_factory: UserFactory,
+    fitbit_user_factory: FitbitUserFactory,
+    local_fitbit_repository: LocalFitbitRepository,
+    settings: Settings,
+):
+    """
+    Given a user whose access token is invalid
+    When we receive the callback from google that a new sleep is available,
+    Then the webhook response is successful,
+    And no sleep is updated in the database
+    And a message is posted to slack about the user being logged out
+    """
+
+    # Given a user
+    user: User = user_factory.create(fitbit=None, slack_alias="jdoe")
+    fitbit_user: FitbitUser = fitbit_user_factory.create(
+        user_id=user.id,
+        health_user_id="123",
+        oauth_access_token="some invalid access token",
+        oauth_expiration_date=dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1),
+    )
+
+    # Mock google endpoint to return an unauthorized error
+    respx_mock.get(settings.google_oauth_settings.oidc_url).pass_through()
+    google_sleep_route = respx_mock.get(
+        url=f"{settings.google_oauth_settings.base_url}/v4/users/me/dataTypes/sleep/dataPoints",
+    ).mock(return_value=Response(status_code=status.HTTP_401_UNAUTHORIZED, json={}))
+
+    # Mock an empty ok response from the slack webhook
+    slack_route = respx_mock.post(f"{settings.secret_settings.slack_webhook_url}").mock(
+        return_value=Response(200)
+    )
+
+    # When we receive the callback from google that a new sleep is available
+    with client:
+        response = client.post(
+            "/google-notification-webhook/",
+            headers={
+                "Authorization": f"Bearer {settings.secret_settings.google_webhook_authorization_token}",
+            },
+            json={
+                "data": {
+                    "healthUserId": "123",
+                    "operation": "UPSERT",
+                    "dataType": "sleep",
+                    "intervals": [
+                        {
+                            "civilIso8601TimeInterval": {
+                                "startTime": "2026-04-11T17:29:00",
+                            },
+                        }
+                    ],
+                }
+            },
+        )
+
+    # Then the webhook response is successful,
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    # Then the access token is not refreshed.
+    assert google_sleep_route.call_count == 1
+    assert fitbit_user.oauth_access_token == "some invalid access token"
+
+    # And no new sleep data is updated in the database
+    actual_last_sleep_data = await local_fitbit_repository.get_sleep_by_user_lookup(
+        user_lookup=fitbit_user.lookup,
+    )
+    assert actual_last_sleep_data is None
+
+    # And a message was sent to slack about the user being logged out
+    actual_message = json.loads(slack_route.calls[0].request.content)["text"].replace(
+        "\n", ""
+    )
+    assert re.search(
+        "Oh no <@jdoe>, looks like you were logged out of google! 😳.", actual_message
+    )
