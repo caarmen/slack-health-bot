@@ -144,31 +144,23 @@ async def get_activities_for_date(
     logging.info(f"Google health distance response: {distance_response.json()}")
     distances = HealthActivities.model_validate(distance_response.json())
 
-    # Exercsies and distances are sorted in decreasing order of interval start time, according to Google documentation:
-    # https://developers.google.com/health/reference/rest/v4/users.dataTypes.dataPoints/list
-    distance_index = 0
-    distance_point_count = len(distances.dataPoints)
+    # Note: we COULD try to be clever and reduce the number of iterations here, especially given
+    # that exercises and distances are already ordered chronologically (based on the api documentation).
+    # But such optimization (as in the previous commit) would not only make the code harder to read,
+    # it would also poorly handle scenarios like exercises overlapping in time.
     for exercise_data_point in exercises.dataPoints:
         exercise = exercise_data_point.exercise
         if exercise.metricsSummary.distanceMillimeters is None:
             # WHY GOOGLE, WHY??? :(
             # Calculate the distance
-            for distance_index in range(distance_index, distance_point_count):
-                distance = distances.dataPoints[distance_index].distance
-                # We're going forward in the lists but backward in time.
-
-                # This distance was after the current exercise, keep going
-                # until we get to a distance for the current exercise.
-                if distance.interval.startTime > exercise.interval.endTime:
-                    continue
-
-                # This distance was before the current exercise, we won't find
-                # any more distances for this exercise.
-                if distance.interval.endTime < exercise.interval.startTime:
-                    break
-
-                if exercise.metricsSummary.distanceMillimeters is None:
-                    exercise.metricsSummary.distanceMillimeters = 0
-                exercise.metricsSummary.distanceMillimeters += distance.millimeters
+            exercise.metricsSummary.distanceMillimeters = 0
+            for distance_data_point in distances.dataPoints:
+                distance = distance_data_point.distance
+                if (
+                    exercise.interval.startTime
+                    <= distance.interval.startTime
+                    <= exercise.interval.endTime
+                ):
+                    exercise.metricsSummary.distanceMillimeters += distance.millimeters
 
     return exercises
