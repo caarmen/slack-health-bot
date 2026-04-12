@@ -144,19 +144,31 @@ async def get_activities_for_date(
     logging.info(f"Google health distance response: {distance_response.json()}")
     distances = HealthActivities.model_validate(distance_response.json())
 
+    # Exercsies and distances are sorted in decreasing order of interval start time, according to Google documentation:
+    # https://developers.google.com/health/reference/rest/v4/users.dataTypes.dataPoints/list
+    distance_index = 0
+    distance_point_count = len(distances.dataPoints)
     for exercise_data_point in exercises.dataPoints:
         exercise = exercise_data_point.exercise
         if exercise.metricsSummary.distanceMillimeters is None:
             # WHY GOOGLE, WHY??? :(
             # Calculate the distance
-            exercise.metricsSummary.distanceMillimeters = 0
-            for distance_data_point in distances.dataPoints:
-                distance = distance_data_point.distance
-                if (
-                    exercise.interval.startTime
-                    <= distance.interval.startTime
-                    <= exercise.interval.endTime
-                ):
-                    exercise.metricsSummary.distanceMillimeters += distance.millimeters
+            for distance_index in range(distance_index, distance_point_count):
+                distance = distances.dataPoints[distance_index].distance
+                # We're going forward in the lists but backward in time.
+
+                # This distance was after the current exercise, keep going
+                # until we get to a distance for the current exercise.
+                if distance.interval.startTime > exercise.interval.endTime:
+                    continue
+
+                # This distance was before the current exercise, we won't find
+                # any more distances for this exercise.
+                if distance.interval.endTime < exercise.interval.startTime:
+                    break
+
+                if exercise.metricsSummary.distanceMillimeters is None:
+                    exercise.metricsSummary.distanceMillimeters = 0
+                exercise.metricsSummary.distanceMillimeters += distance.millimeters
 
     return exercises
