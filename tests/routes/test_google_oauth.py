@@ -75,10 +75,10 @@ class LoginScenario:
             ),
         ),
         LoginScenario(
-            id="fitbit + google user",
+            id="fitbit + google user (most recently google)",
             existing_slack_user=True,
             existing_fitbit_user_data={
-                "oauth_userid": "legacyfitbit123",
+                "oauth_userid": "googleuserid123",
                 "fitbit_user_id": "legacyfitbit123",
                 "health_user_id": "healthuser123",
             },
