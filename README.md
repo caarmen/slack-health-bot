@@ -82,6 +82,8 @@ curl --location 'http://your-server/withings-notification-webhook/' \
     >
     > • Score: 96
 
+### Google
+See [docs/google-setup.md](docs/google-setup.md).
 ### Admin interface
 An admin interface is available to browse the data in the database, at http://your-server/admin
 

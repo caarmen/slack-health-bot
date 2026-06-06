@@ -161,6 +161,7 @@ class Google(BaseModel):
     oidc_url: str = "https://accounts.google.com/.well-known/openid-configuration"
     oauth_scopes: list[str] = [
         "openid",
+        "https://www.googleapis.com/auth/googlehealth.profile.readonly",
         "https://www.googleapis.com/auth/googlehealth.activity_and_fitness",
         "https://www.googleapis.com/auth/googlehealth.sleep",
     ]
