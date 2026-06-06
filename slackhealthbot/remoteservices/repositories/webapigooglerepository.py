@@ -90,7 +90,7 @@ def remote_service_activity_type(exercise: activityapi.Exercise) -> int:
     # a treadmill activity.
     # This is not very reliable. We'll have to revisit this when the Google apis become more stable.
     if exercise.exerciseType == "OTHER":
-        if exercise.displayName == "Tapis de course":
+        if exercise.displayName in ("Tapis de course", "Treadmill walk"):
             return 91064
     if exercise.exerciseType == "WALKING":
         return 90013
