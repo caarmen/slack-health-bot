@@ -17,15 +17,15 @@ DurationS = Annotated[int, BeforeValidator(parse_seconds_duration)]
 
 
 class TimeInHeartRateZones(BaseModel):
-    lightTime: DurationS
-    moderateTime: DurationS
-    vigorousTime: DurationS
-    peakTime: DurationS
+    lightTime: DurationS | None = None
+    moderateTime: DurationS | None = None
+    vigorousTime: DurationS | None = None
+    peakTime: DurationS | None = None
 
 
 class MetricsSummary(BaseModel):
     caloriesKcal: float
-    heartRateZoneDurations: TimeInHeartRateZones
+    heartRateZoneDurations: TimeInHeartRateZones | None = None
     distanceMillimeters: int | None = None
     model_config = ConfigDict(extra="allow")
 

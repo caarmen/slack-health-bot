@@ -1,3 +1,4 @@
+import dataclasses
 import datetime as dt
 import json
 from typing import Any
@@ -194,9 +195,43 @@ async def test_sleep_notification(
     assert actual_slack_message == expected_slack_message
 
 
+@dataclasses.dataclass
+class HeartRateScenario:
+    id: str
+    remote_heart_rate_data: dict[str, str] | None
+    expected_zone_minutes: list[ActivityZoneMinutes]
+
+
 @pytest.mark.parametrize(
     argnames="data_type",
     argvalues=["exercise", "distance"],
+)
+@pytest.mark.parametrize(
+    ids=lambda s: s.id,
+    argnames="heart_rate_scenario",
+    argvalues=[
+        HeartRateScenario(
+            id="some heart rate data",
+            remote_heart_rate_data={
+                "heartRateZoneDurations": {
+                    "lightTime": "0s",
+                    "moderateTime": "63s",
+                    "vigorousTime": "0s",
+                },
+            },
+            expected_zone_minutes=[
+                ActivityZoneMinutes(
+                    zone=ActivityZone.FAT_BURN,
+                    minutes=1,
+                ),
+            ],
+        ),
+        HeartRateScenario(
+            id="no heart rate data",
+            remote_heart_rate_data={},
+            expected_zone_minutes=[],
+        ),
+    ],
 )
 @pytest.mark.asyncio
 async def test_exercise_notification(
@@ -207,6 +242,7 @@ async def test_exercise_notification(
     fitbit_user: FitbitUser,
     local_fitbit_repository: LocalFitbitRepository,
     settings: Settings,
+    heart_rate_scenario: HeartRateScenario,
 ):
     """
     Given a fitbit user
@@ -247,12 +283,7 @@ async def test_exercise_notification(
                                 "caloriesKcal": 23,
                                 "activeZoneMinutes": "0",
                                 "distanceMillimeters": 120715,
-                                "heartRateZoneDurations": {
-                                    "lightTime": "0s",
-                                    "moderateTime": "63s",
-                                    "vigorousTime": "0s",
-                                    "peakTime": "0s",
-                                },
+                                **heart_rate_scenario.remote_heart_rate_data,
                             },
                             "displayName": "Tapis de course",
                             "activeDuration": "1800s",
@@ -308,12 +339,7 @@ async def test_exercise_notification(
         total_minutes=30,
         calories=23,
         distance_km=pytest.approx(0.120715),
-        zone_minutes=[
-            ActivityZoneMinutes(
-                zone=ActivityZone.FAT_BURN,
-                minutes=1,
-            ),
-        ],
+        zone_minutes=heart_rate_scenario.expected_zone_minutes,
     )
 
     # And a message is posted to slack.
