@@ -76,7 +76,7 @@ class FitbitUserAdmin(ModelView, model=FitbitUser):
 class FitbitActivityAdmin(ModelView, model=FitbitActivity):
     form_include_pk = True
     column_default_sort = [
-        (FitbitActivity.created_at, True),
+        (FitbitActivity.logged_at, True),
     ]
 
 
