@@ -40,22 +40,22 @@ async def _upsert_user(
             FitbitUserLookup(user_id=health_ids.fitbit_user_id),
         )
 
-    # Matching legacy fitbit user.
+    # Matching legacy fitbit user which hasn't yet logged in with Google Health.
     # Update its oauth fields, looking up by their legacy fitbit user id
     # and then updating the oauth_userid to now be the google oauth user id.
-    if user_identity:
+    if user_identity and not user_identity.health_user_id:
         await local_repo.update_oauth_data(
             oauth_userid=health_ids.fitbit_user_id,
             oauth_data=oauth_fields,
         )
 
     # No matching legacy fitbit user.
-    # See if we have a google-only user.
+    # See if we have a google user.
     else:
         user_identity = await local_repo.get_user_identity(
             HealthUserLookup(user_id=health_ids.health_user_id)
         )
-        # Found existing google-only user.
+        # Found existing google user.
         # Update their oauth info (their oauth_userid won't change)
         if user_identity:
             await local_repo.update_oauth_data(

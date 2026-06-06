@@ -90,7 +90,7 @@ def remote_service_activity_type(exercise: activityapi.Exercise) -> int:
     # a treadmill activity.
     # This is not very reliable. We'll have to revisit this when the Google apis become more stable.
     if exercise.exerciseType == "OTHER":
-        if exercise.displayName == "Tapis de course":
+        if exercise.displayName in ("Tapis de course", "Treadmill walk"):
             return 91064
     if exercise.exerciseType == "WALKING":
         return 90013
@@ -98,6 +98,31 @@ def remote_service_activity_type(exercise: activityapi.Exercise) -> int:
         return 90001
 
     return 99999
+
+
+def _remote_time_in_heart_rate_zones_to_domain_activity_zone_minutes(
+    time_in_heart_rate_zones: activityapi.TimeInHeartRateZones | None,
+) -> list[ActivityZoneMinutes]:
+    if time_in_heart_rate_zones is None:
+        return []
+    result: list[ActivityZoneMinutes] = []
+    remote_attr_to_domain_enum = {
+        "peakTime": ActivityZone.PEAK,
+        "vigorousTime": ActivityZone.CARDIO,
+        "moderateTime": ActivityZone.FAT_BURN,
+        "lightTime": ActivityZone.OUT_OF_ZONE,
+    }
+    for remote_attr, domain_enum in remote_attr_to_domain_enum.items():
+        value_seconds = getattr(time_in_heart_rate_zones, remote_attr)
+        if value_seconds:
+            result.append(
+                ActivityZoneMinutes(
+                    zone=domain_enum,
+                    minutes=value_seconds // 60,
+                )
+            )
+
+    return result
 
 
 def remote_service_activity_to_domain_activity(
@@ -112,28 +137,9 @@ def remote_service_activity_to_domain_activity(
         distance_km=data_point.exercise.metricsSummary.distanceMillimeters
         / (1000 * 1000),
         total_minutes=data_point.exercise.activeDuration / 60,
-        zone_minutes=[
-            ActivityZoneMinutes(
-                zone=ActivityZone.PEAK,
-                minutes=data_point.exercise.metricsSummary.heartRateZoneDurations.peakTime
-                // 60,
-            ),
-            ActivityZoneMinutes(
-                zone=ActivityZone.CARDIO,
-                minutes=data_point.exercise.metricsSummary.heartRateZoneDurations.vigorousTime
-                // 60,
-            ),
-            ActivityZoneMinutes(
-                zone=ActivityZone.FAT_BURN,
-                minutes=data_point.exercise.metricsSummary.heartRateZoneDurations.moderateTime
-                // 60,
-            ),
-            ActivityZoneMinutes(
-                zone=ActivityZone.OUT_OF_ZONE,
-                minutes=data_point.exercise.metricsSummary.heartRateZoneDurations.lightTime
-                // 60,
-            ),
-        ],
+        zone_minutes=_remote_time_in_heart_rate_zones_to_domain_activity_zone_minutes(
+            data_point.exercise.metricsSummary.heartRateZoneDurations,
+        ),
     )
 
 
