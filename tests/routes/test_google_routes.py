@@ -204,10 +204,12 @@ class MetricsSummaryScenario:
     expected_distance_km: float
 
 
-@pytest.mark.parametrize(
-    argnames="data_type",
-    argvalues=["exercise", "distance"],
-)
+@dataclasses.dataclass
+class WebhookPayloadScenario:
+    id: str
+    webhook_payload: list[dict[str, Any]] | dict[str, Any]
+
+
 @pytest.mark.parametrize(
     ids=lambda s: s.id,
     argnames="scenario",
@@ -242,16 +244,98 @@ class MetricsSummaryScenario:
         ),
     ],
 )
+@pytest.mark.parametrize(
+    ids=lambda s: s.id,
+    argnames="webhook_payload_scenario",
+    argvalues=[
+        WebhookPayloadScenario(
+            id="list exercise",
+            webhook_payload=[
+                {
+                    "data": {
+                        "healthUserId": "123",
+                        "operation": "UPSERT",
+                        "dataType": "exercise",
+                        "intervals": [
+                            {
+                                "civilIso8601TimeInterval": {
+                                    "startTime": "2026-04-11T17:29:00.040495",
+                                    "endTime": "2026-04-011T17:34:22.040495",
+                                },
+                            }
+                        ],
+                    },
+                }
+            ],
+        ),
+        WebhookPayloadScenario(
+            id="list distance",
+            webhook_payload=[
+                {
+                    "data": {
+                        "healthUserId": "123",
+                        "operation": "UPSERT",
+                        "dataType": "distance",
+                        "intervals": [
+                            {
+                                "civilIso8601TimeInterval": {
+                                    "startTime": "2026-04-11T17:29:00.040495",
+                                    "endTime": "2026-04-011T17:34:22.040495",
+                                },
+                            }
+                        ],
+                    },
+                }
+            ],
+        ),
+        WebhookPayloadScenario(
+            id="dict exercise",
+            webhook_payload={
+                "data": {
+                    "healthUserId": "123",
+                    "operation": "UPSERT",
+                    "dataType": "exercise",
+                    "intervals": [
+                        {
+                            "civilIso8601TimeInterval": {
+                                "startTime": "2026-04-11T17:29:00.040495",
+                                "endTime": "2026-04-011T17:34:22.040495",
+                            },
+                        }
+                    ],
+                },
+            },
+        ),
+        WebhookPayloadScenario(
+            id="dict distance",
+            webhook_payload={
+                "data": {
+                    "healthUserId": "123",
+                    "operation": "UPSERT",
+                    "dataType": "distance",
+                    "intervals": [
+                        {
+                            "civilIso8601TimeInterval": {
+                                "startTime": "2026-04-11T17:29:00.040495",
+                                "endTime": "2026-04-011T17:34:22.040495",
+                            },
+                        }
+                    ],
+                },
+            },
+        ),
+    ],
+)
 @pytest.mark.asyncio
 async def test_exercise_notification(
     client: TestClient,
-    data_type: str,
     respx_mock: MockRouter,
     authorization_headers: dict[str, str],
     fitbit_user: FitbitUser,
     local_fitbit_repository: LocalFitbitRepository,
     settings: Settings,
     scenario: MetricsSummaryScenario,
+    webhook_payload_scenario: WebhookPayloadScenario,
 ):
     """
     Given a fitbit user
@@ -310,20 +394,7 @@ async def test_exercise_notification(
         response = client.post(
             "/google-notification-webhook/",
             headers=authorization_headers,
-            json={
-                "data": {
-                    "healthUserId": "123",
-                    "operation": "UPSERT",
-                    "dataType": data_type,
-                    "intervals": [
-                        {
-                            "civilIso8601TimeInterval": {
-                                "startTime": "2026-04-11T17:29:00",
-                            },
-                        }
-                    ],
-                }
-            },
+            json=webhook_payload_scenario.webhook_payload,
         )
 
     # Then the webhook returns a successful response,
