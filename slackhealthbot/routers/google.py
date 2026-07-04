@@ -125,7 +125,15 @@ async def google_oauth_webhook(
     )
 
 
-@router.post("/google-notification-webhook/")
+async def log_raw_request(request: Request):
+    body = await request.body()
+    logging.info(f"Incoming Request Body: {body.decode()}")
+
+
+@router.post(
+    "/google-notification-webhook/",
+    dependencies=[Depends(log_raw_request)],
+)
 @inject
 async def google_notification_webhook(
     notification: Notification,
