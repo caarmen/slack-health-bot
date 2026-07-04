@@ -86,7 +86,11 @@ class VerificationNotification(BaseModel):
 
 # Google can call our webhook route with either exercise/sleep data, or to verify
 # that the route is correctly configured.
-Notification = DataNotification | VerificationNotification
+# The webhook documentation indicates that a data notification is an object,
+# but in reality we observe that it's an array containing one object.
+# Support both.
+# https://developers.google.com/health/webhooks
+Notification = list[DataNotification] | DataNotification | VerificationNotification
 
 # End models for the webhook notification request body
 
@@ -160,9 +164,13 @@ async def google_notification_webhook(
     # https://developers.google.com/health/webhooks#endpoint_verification
     if isinstance(notification, VerificationNotification):
         return Response(status_code=status.HTTP_200_OK)
-    # else: notification is a DataNotification
-
-    data_notification: DataNotification = notification
+    if isinstance(notification, list):
+        if len(notification) == 0:
+            logging.warning("Received empty data notificaion")
+            return Response(status_code=status.HTTP_200_OK)
+        data_notification: DataNotification = notification[0]
+    else:  # notification is a DataNotification
+        data_notification = notification
 
     # Cases we don't handle:
     if (
