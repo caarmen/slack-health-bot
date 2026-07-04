@@ -24,7 +24,7 @@ class TimeInHeartRateZones(BaseModel):
 
 
 class MetricsSummary(BaseModel):
-    caloriesKcal: float
+    caloriesKcal: float = 0
     heartRateZoneDurations: TimeInHeartRateZones | None = None
     distanceMillimeters: int | None = None
     model_config = ConfigDict(extra="allow")
