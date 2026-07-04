@@ -83,15 +83,8 @@ class WebApiGoogleRepository(RemoteGoogleRepository):
 
 def remote_service_activity_type(exercise: activityapi.Exercise) -> int:
     # https://developers.google.com/health/reference/rest/v4/users.dataTypes.dataPoints#Exercise.ExerciseType
-    # WHY GOOGLE?
-    # Google has only a handful of exercise types, much less than the Fitbit api.
-    # "Treadmill" isn't one of them, unfortunately.
-    # Just by testing, we see that the displayName was "Tapis de course", for one account, for
-    # a treadmill activity.
-    # This is not very reliable. We'll have to revisit this when the Google apis become more stable.
-    if exercise.exerciseType == "OTHER":
-        if exercise.displayName in ("Tapis de course", "Treadmill walk"):
-            return 91064
+    if exercise.exerciseType in ("TREADMILL", "TREADMILL_WALK"):
+        return 91064
     if exercise.exerciseType == "WALKING":
         return 90013
     if exercise.exerciseType == "BIKING":
