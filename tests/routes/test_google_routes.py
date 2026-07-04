@@ -196,10 +196,12 @@ async def test_sleep_notification(
 
 
 @dataclasses.dataclass
-class HeartRateScenario:
+class MetricsSummaryScenario:
     id: str
-    remote_heart_rate_data: dict[str, str] | None
+    metrics_summary_data: dict[str, Any] | None
     expected_zone_minutes: list[ActivityZoneMinutes]
+    expected_calories: int
+    expected_distance_km: float
 
 
 @pytest.mark.parametrize(
@@ -208,11 +210,14 @@ class HeartRateScenario:
 )
 @pytest.mark.parametrize(
     ids=lambda s: s.id,
-    argnames="heart_rate_scenario",
+    argnames="scenario",
     argvalues=[
-        HeartRateScenario(
-            id="some heart rate data",
-            remote_heart_rate_data={
+        MetricsSummaryScenario(
+            id="some metrics summary data",
+            metrics_summary_data={
+                "caloriesKcal": 23,
+                "distanceMillimeters": 120715,
+                "activeZoneMinutes": "0",
                 "heartRateZoneDurations": {
                     "lightTime": "0s",
                     "moderateTime": "63s",
@@ -225,11 +230,15 @@ class HeartRateScenario:
                     minutes=1,
                 ),
             ],
+            expected_calories=23,
+            expected_distance_km=0.120715,
         ),
-        HeartRateScenario(
-            id="no heart rate data",
-            remote_heart_rate_data={},
+        MetricsSummaryScenario(
+            id="no metrics summary data",
+            metrics_summary_data={},
             expected_zone_minutes=[],
+            expected_calories=0,
+            expected_distance_km=0,
         ),
     ],
 )
@@ -242,7 +251,7 @@ async def test_exercise_notification(
     fitbit_user: FitbitUser,
     local_fitbit_repository: LocalFitbitRepository,
     settings: Settings,
-    heart_rate_scenario: HeartRateScenario,
+    scenario: MetricsSummaryScenario,
 ):
     """
     Given a fitbit user
@@ -279,12 +288,7 @@ async def test_exercise_notification(
                                 "endUtcOffset": "7200s",
                             },
                             "exerciseType": "WALKING",
-                            "metricsSummary": {
-                                "caloriesKcal": 23,
-                                "activeZoneMinutes": "0",
-                                "distanceMillimeters": 120715,
-                                **heart_rate_scenario.remote_heart_rate_data,
-                            },
+                            "metricsSummary": scenario.metrics_summary_data,
                             "displayName": "Tapis de course",
                             "activeDuration": "1800s",
                         },
@@ -337,9 +341,9 @@ async def test_exercise_notification(
         type_id=90013,
         logged_at=dt.datetime(2026, 4, 4, 22, 53),
         total_minutes=30,
-        calories=23,
-        distance_km=pytest.approx(0.120715),
-        zone_minutes=heart_rate_scenario.expected_zone_minutes,
+        calories=scenario.expected_calories,
+        distance_km=pytest.approx(scenario.expected_distance_km),
+        zone_minutes=scenario.expected_zone_minutes,
     )
 
     # And a message is posted to slack.
