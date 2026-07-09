@@ -1,5 +1,6 @@
 # slack-health-bot: Slack notifications for limited Withings and Fitbit data
 
+
 Pushes messages to a pre-selected Slack channel, when users log new weight data in Withings or new sleep or activity data in Fitbit.
 
 [![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/caarmen/slack-health-bot/check.yml)](https://github.com/caarmen/slack-health-bot/actions/workflows/check.yml?query=branch%3Amain)

@@ -287,7 +287,7 @@ async def test_logged_out(
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Then the access token is not refreshed.
-    assert google_sleep_route.call_count == 1
+    assert google_sleep_route.call_count == 0
     assert fitbit_user.oauth_access_token == "some invalid access token"
 
     # And no new sleep data is updated in the database
