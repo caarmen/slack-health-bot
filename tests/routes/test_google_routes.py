@@ -374,7 +374,7 @@ async def test_exercise_notification(
                             "exerciseType": "WALKING",
                             "metricsSummary": scenario.metrics_summary_data,
                             "displayName": "Tapis de course",
-                            "activeDuration": "1800s",
+                            "activeDuration": "1800.123s",
                         },
                     }
                 ],
@@ -411,7 +411,7 @@ async def test_exercise_notification(
         log_id="yyy",
         type_id=90013,
         logged_at=dt.datetime(2026, 4, 4, 22, 53),
-        total_minutes=30,
+        total_minutes=pytest.approx(30.00205),
         calories=scenario.expected_calories,
         distance_km=pytest.approx(scenario.expected_distance_km),
         zone_minutes=scenario.expected_zone_minutes,

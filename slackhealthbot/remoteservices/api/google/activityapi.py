@@ -9,11 +9,11 @@ from slackhealthbot.oauth import requests
 from slackhealthbot.settings import Settings
 
 
-def parse_seconds_duration(value: str) -> int:
-    return int(value[:-1])
+def parse_seconds_duration(value: str) -> float:
+    return float(value[:-1])
 
 
-DurationS = Annotated[int, BeforeValidator(parse_seconds_duration)]
+DurationS = Annotated[float, BeforeValidator(parse_seconds_duration)]
 
 
 class TimeInHeartRateZones(BaseModel):
@@ -94,7 +94,7 @@ class HealthActivities(BaseModel):
               "hasGps": false
             },
             "displayName": "Tapis de course",
-            "activeDuration": "1800s",
+            "activeDuration": "1800.123s",
             "updateTime": "2026-04-04T23:23:24.269034Z",
             "createTime": "2026-04-04T23:23:24.269034Z"
           }
