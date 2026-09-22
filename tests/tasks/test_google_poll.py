@@ -176,7 +176,7 @@ async def test_google_poll_activity(  # noqa: PLR0913
                                 },
                             },
                             "displayName": "Tapis de course",
-                            "activeDuration": "1800s",
+                            "activeDuration": "1800.123s",
                         },
                     }
                 ],
@@ -244,7 +244,7 @@ async def test_google_poll_activity(  # noqa: PLR0913
         log_id="yyy",
         type_id=90013,
         logged_at=datetime.datetime(2026, 4, 4, 22, 53),
-        total_minutes=30,
+        total_minutes=pytest.approx(30.00205),
         calories=23,
         distance_km=pytest.approx(0.120715),
         zone_minutes=[
