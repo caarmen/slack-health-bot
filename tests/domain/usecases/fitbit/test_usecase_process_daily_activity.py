@@ -202,7 +202,6 @@ class DoubleActivityTypeStreakScenario:
             expected_day2_credit_km=None,
             expected_day2_debit_km=None,
         ),
-        # TDD: this fails currently
         DoubleActivityTypeStreakScenario(
             id="Primary activity only: No enough activity second day, use credit from first day",
             day1_primary_km=23.0,  # 3km credit
@@ -217,7 +216,6 @@ class DoubleActivityTypeStreakScenario:
             expected_day2_credit_km=None,
             expected_day2_debit_km=2.0,
         ),
-        # TDD: this fails currently
         DoubleActivityTypeStreakScenario(
             id="Primary & secondary activity: Not enough activity second day, use credit from first day",
             day1_primary_km=23.0,  # 3km credit
@@ -263,7 +261,6 @@ class DoubleActivityTypeStreakScenario:
             expected_day2_credit_km=None,
             expected_day2_debit_km=None,
         ),
-        # TDD: this fails currently
         DoubleActivityTypeStreakScenario(
             id="Combine credit and secondary activity",
             day1_primary_km=23.0,  # 3km credit
