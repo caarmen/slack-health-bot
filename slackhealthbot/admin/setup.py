@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 
 from slackhealthbot.admin.auth import AdminAuth
 from slackhealthbot.admin.models import (
+    DistanceAccountAdmin,
     FitbitActivityAdmin,
     FitbitDailyActivityAdmin,
     FitbitUserAdmin,
@@ -36,5 +37,6 @@ def init_admin(
     admin.add_view(WithingsUserAdmin)
     admin.add_view(FitbitUserAdmin)
     admin.add_view(FitbitActivityAdmin)
+    admin.add_view(DistanceAccountAdmin)
     admin.add_view(FitbitDailyActivityAdmin)
     return admin

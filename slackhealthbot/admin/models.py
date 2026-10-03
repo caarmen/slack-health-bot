@@ -4,6 +4,7 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.sql.sqltypes import Date, DateTime
 
 from slackhealthbot.data.database.models import (
+    DistanceAccount,
     FitbitActivity,
     FitbitDailyActivity,
     FitbitUser,
@@ -77,6 +78,14 @@ class FitbitActivityAdmin(ModelView, model=FitbitActivity):
     form_include_pk = True
     column_default_sort = [
         (FitbitActivity.logged_at, True),
+    ]
+
+
+@auto_admin
+class DistanceAccountAdmin(ModelView, model=DistanceAccount):
+    form_include_pk = True
+    column_default_sort = [
+        (DistanceAccount.date, True),
     ]
 
 

@@ -2,7 +2,7 @@ from datetime import date as dt_date
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Float, ForeignKey, String, func
+from sqlalchemy import Float, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
 from slackhealthbot.domain.models.users import (
@@ -91,6 +91,26 @@ class FitbitActivity(TimestampMixin, Base):
     fitbit_user_id: Mapped[int] = mapped_column(
         ForeignKey("fitbit_users.id", ondelete="CASCADE")
     )
+
+
+class DistanceAccount(TimestampMixin, Base):
+    __tablename__ = "distance_account"
+    # https://docs.sqlalchemy.org/en/21/orm/declarative_tables.html#declarative-table-configuration
+    __table_args__ = (
+        UniqueConstraint(
+            "fitbit_user_id",
+            "type_id",
+            "date",
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    fitbit_user_id: Mapped[int] = mapped_column(
+        ForeignKey("fitbit_users.id", ondelete="CASCADE")
+    )
+    type_id: Mapped[int] = mapped_column()
+    date: Mapped[dt_date] = mapped_column()
+    credit_km: Mapped[Optional[float]] = mapped_column()
+    debit_km: Mapped[Optional[float]] = mapped_column()
 
 
 class FitbitDailyActivity(Base):
