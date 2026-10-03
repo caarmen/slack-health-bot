@@ -274,6 +274,7 @@ async def test_daily_activities_one_entry(
             count_activities=2,
             sum_calories=900,
             sum_distance_km=pytest.approx(5.4),
+            adjusted_distance_km=None,
             sum_total_minutes=30,
             sum_fat_burn_minutes=37,
             sum_cardio_minutes=35,

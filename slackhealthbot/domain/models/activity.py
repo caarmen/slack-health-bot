@@ -53,6 +53,7 @@ class DailyActivityStats:
     count_activities: int
     sum_calories: int
     sum_distance_km: float | None
+    adjusted_distance_km: float | None
     sum_total_minutes: int
     sum_fat_burn_minutes: int | None
     sum_cardio_minutes: int | None
