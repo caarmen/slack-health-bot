@@ -150,8 +150,7 @@ class LocalFitbitRepository(ABC):
     async def get_latest_daily_activity_by_user_and_activity_type(
         self,
         user_lookup: UserLookup,
-        primary_type_id: int,
-        secondary_type_id: int | None = None,
+        type_id: int,
         before: datetime.date | None = None,
     ) -> DailyActivityStats | None:
         """
