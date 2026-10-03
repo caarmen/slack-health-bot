@@ -504,7 +504,14 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         if secondary_type_id is not None:
             activity_type_ids.append(secondary_type_id)
         statement = (
-            select(func.sum(models.FitbitDailyActivity.sum_distance_km))
+            select(
+                func.sum(
+                    func.coalesce(
+                        models.FitbitDailyActivity.adjusted_distance_km,
+                        models.FitbitDailyActivity.sum_distance_km,
+                    )
+                )
+            )
             .join(models.FitbitUser)
             .join(models.User)
             .where(
@@ -705,9 +712,12 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 .over(order_by=models.FitbitDailyActivity.date.desc())
                 .label("row_num"),
                 models.FitbitDailyActivity.date,
-                func.sum(models.FitbitDailyActivity.sum_distance_km).label(
-                    "total_sum_distance_km"
-                ),
+                func.sum(
+                    func.coalesce(
+                        models.FitbitDailyActivity.adjusted_distance_km,
+                        models.FitbitDailyActivity.sum_distance_km,
+                    )
+                ).label("total_sum_distance_km"),
                 has_primary_expr.label("has_primary_type_id"),
             )
             .join(models.FitbitUser)
