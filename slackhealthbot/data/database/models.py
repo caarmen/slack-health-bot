@@ -126,6 +126,7 @@ class FitbitDailyActivity(Base):
     count_activities: Mapped[int] = mapped_column()
     sum_calories: Mapped[int] = mapped_column()
     sum_distance_km: Mapped[float] = mapped_column()
+    adjusted_distance_km: Mapped[float] = mapped_column()
     sum_total_minutes: Mapped[int] = mapped_column()
     sum_fat_burn_minutes: Mapped[Optional[int]] = mapped_column()
     sum_cardio_minutes: Mapped[Optional[int]] = mapped_column()
