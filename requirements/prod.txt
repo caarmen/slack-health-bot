@@ -8,6 +8,8 @@ httpx==0.28.1
 itsdangerous==2.2.0
 Jinja2==3.1.6
 openai==2.28.0
+opentelemetry-distro==0.66b1
+opentelemetry-exporter-otlp==1.45.1
 passlib==1.7.4
 pydantic-settings[yaml]==2.13.1
 pydantic==2.12.5
