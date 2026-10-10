@@ -56,6 +56,7 @@ class Container(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(
         modules=[
             "slackhealthbot.data.database.connection",
+            "slackhealthbot.domain.usecases.fitbit.usecase_adjust_distance_balance",
             "slackhealthbot.domain.usecases.fitbit.usecase_calculate_streak",
             "slackhealthbot.domain.usecases.fitbit.usecase_get_last_sleep",
             "slackhealthbot.domain.usecases.fitbit.usecase_login_user",

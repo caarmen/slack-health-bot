@@ -443,6 +443,45 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
             count_activities=daily_activity.count_activities,
             sum_calories=daily_activity.sum_calories,
             sum_distance_km=daily_activity.sum_distance_km,
+            adjusted_distance_km=daily_activity.adjusted_distance_km,
+            sum_total_minutes=daily_activity.sum_total_minutes,
+            sum_fat_burn_minutes=daily_activity.sum_fat_burn_minutes,
+            sum_cardio_minutes=daily_activity.sum_cardio_minutes,
+            sum_peak_minutes=daily_activity.sum_peak_minutes,
+            sum_out_of_zone_minutes=daily_activity.sum_out_of_zone_minutes,
+        )
+
+    async def get_daily_activity_by_user_and_activity_type_and_date(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+        on: datetime.date,
+    ) -> DailyActivityStats | None:
+        daily_activity: models.FitbitDailyActivity = (
+            await self.db.scalars(
+                statement=select(models.FitbitDailyActivity)
+                .join(models.FitbitUser)
+                .join(models.User)
+                .where(
+                    and_(
+                        models.FitbitDailyActivity.date == on,
+                        _where_clause(user_lookup),
+                        models.FitbitDailyActivity.type_id == type_id,
+                    )
+                )
+            )
+        ).one_or_none()
+        if not daily_activity:
+            return None
+        return DailyActivityStats(
+            date=daily_activity.date,
+            user_lookup=daily_activity.fitbit_user.lookup,
+            slack_alias=daily_activity.fitbit_user.user.slack_alias,
+            type_id=daily_activity.type_id,
+            count_activities=daily_activity.count_activities,
+            sum_calories=daily_activity.sum_calories,
+            sum_distance_km=daily_activity.sum_distance_km,
+            adjusted_distance_km=daily_activity.adjusted_distance_km,
             sum_total_minutes=daily_activity.sum_total_minutes,
             sum_fat_burn_minutes=daily_activity.sum_fat_burn_minutes,
             sum_cardio_minutes=daily_activity.sum_cardio_minutes,
@@ -465,7 +504,14 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         if secondary_type_id is not None:
             activity_type_ids.append(secondary_type_id)
         statement = (
-            select(func.sum(models.FitbitDailyActivity.sum_distance_km))
+            select(
+                func.sum(
+                    func.coalesce(
+                        models.FitbitDailyActivity.adjusted_distance_km,
+                        models.FitbitDailyActivity.sum_distance_km,
+                    )
+                )
+            )
             .join(models.FitbitUser)
             .join(models.User)
             .where(
@@ -666,9 +712,12 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 .over(order_by=models.FitbitDailyActivity.date.desc())
                 .label("row_num"),
                 models.FitbitDailyActivity.date,
-                func.sum(models.FitbitDailyActivity.sum_distance_km).label(
-                    "total_sum_distance_km"
-                ),
+                func.sum(
+                    func.coalesce(
+                        models.FitbitDailyActivity.adjusted_distance_km,
+                        models.FitbitDailyActivity.sum_distance_km,
+                    )
+                ).label("total_sum_distance_km"),
                 has_primary_expr.label("has_primary_type_id"),
             )
             .join(models.FitbitUser)
@@ -799,6 +848,7 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
                 count_activities=daily_activity.count_activities,
                 sum_calories=daily_activity.sum_calories,
                 sum_distance_km=daily_activity.sum_distance_km,
+                adjusted_distance_km=daily_activity.adjusted_distance_km,
                 sum_total_minutes=daily_activity.sum_total_minutes,
                 sum_fat_burn_minutes=daily_activity.sum_fat_burn_minutes,
                 sum_cardio_minutes=daily_activity.sum_cardio_minutes,
@@ -844,6 +894,111 @@ class SQLAlchemyFitbitRepository(LocalFitbitRepository):
         # noinspection PyProtectedMember
         row = results.one()._asdict()
         return TopDailyActivityStats(**row)
+
+    async def get_distance_km_balance_by_user_and_type(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+    ) -> float:
+        """
+        Get the remaining balance in the distance account for the given user and activity type.
+        """
+        user: models.FitbitUser = (
+            await self.db.scalars(
+                statement=select(models.FitbitUser).where(_where_clause(user_lookup))
+            )
+        ).one()
+
+        balance_km = (
+            await self.db.scalars(
+                statement=select(
+                    func.sum(func.coalesce(models.DistanceAccount.credit_km, 0.0))
+                    - func.sum(func.coalesce(models.DistanceAccount.debit_km, 0.0)),
+                ).where(
+                    and_(
+                        models.DistanceAccount.fitbit_user_id == user.id,
+                        models.DistanceAccount.type_id == type_id,
+                    )
+                )
+            )
+        ).one_or_none()
+        return balance_km or 0.0
+
+    async def set_credit_distance_km_for_user_and_type_and_date(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+        on: datetime.date,
+        credit_km: float,
+    ):
+        user: models.FitbitUser = (
+            await self.db.scalars(
+                statement=select(models.FitbitUser).where(_where_clause(user_lookup))
+            )
+        ).one()
+
+        result = (
+            await self.db.execute(
+                statement=update(models.DistanceAccount)
+                .where(
+                    and_(
+                        models.DistanceAccount.fitbit_user_id == user.id,
+                        models.DistanceAccount.type_id == type_id,
+                        models.DistanceAccount.date == on,
+                    )
+                )
+                .values(credit_km=credit_km)
+                .returning(models.DistanceAccount)
+            )
+        ).one_or_none()
+        if not result:
+            self.db.add(
+                models.DistanceAccount(
+                    fitbit_user_id=user.id,
+                    type_id=type_id,
+                    date=on,
+                    credit_km=credit_km,
+                )
+            )
+            await self.db.commit()
+
+    async def set_debit_distance_km_for_user_and_type_and_date(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+        on: datetime.date,
+        debit_km: float,
+    ):
+        user: models.FitbitUser = (
+            await self.db.scalars(
+                statement=select(models.FitbitUser).where(_where_clause(user_lookup))
+            )
+        ).one()
+
+        result = (
+            await self.db.execute(
+                statement=update(models.DistanceAccount)
+                .where(
+                    and_(
+                        models.DistanceAccount.fitbit_user_id == user.id,
+                        models.DistanceAccount.type_id == type_id,
+                        models.DistanceAccount.date == on,
+                    )
+                )
+                .values(debit_km=debit_km)
+                .returning(models.DistanceAccount)
+            )
+        ).one_or_none()
+        if not result:
+            self.db.add(
+                models.DistanceAccount(
+                    fitbit_user_id=user.id,
+                    type_id=type_id,
+                    date=on,
+                    debit_km=debit_km,
+                )
+            )
+            await self.db.commit()
 
 
 def _db_activity_to_domain_activity(

@@ -150,8 +150,7 @@ class LocalFitbitRepository(ABC):
     async def get_latest_daily_activity_by_user_and_activity_type(
         self,
         user_lookup: UserLookup,
-        primary_type_id: int,
-        secondary_type_id: int | None = None,
+        type_id: int,
         before: datetime.date | None = None,
     ) -> DailyActivityStats | None:
         """
@@ -159,6 +158,17 @@ class LocalFitbitRepository(ABC):
         If no date is provided, today's date is used.
         """
         pass
+
+    @abstractmethod
+    async def get_daily_activity_by_user_and_activity_type_and_date(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+        on: datetime.date,
+    ) -> DailyActivityStats | None:
+        """
+        Get the daily stats for the given user and activity type, on the given date.
+        """
 
     @abstractmethod
     async def get_daily_activity_streak_days_count_for_user_and_activity_type(  # noqa: PLR0913
@@ -219,3 +229,37 @@ class LocalFitbitRepository(ABC):
         Get the top daily activity stats for the given user and activity type.
         """
         pass
+
+    @abstractmethod
+    async def get_distance_km_balance_by_user_and_type(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+    ) -> float:
+        """
+        Get the remaining balance in the distance account for the given user and activity type.
+        """
+
+    @abstractmethod
+    async def set_credit_distance_km_for_user_and_type_and_date(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+        on: datetime.date,
+        credit_km: float,
+    ):
+        """
+        Set the distance credit in km for the given date, user, and activity type.
+        """
+
+    @abstractmethod
+    async def set_debit_distance_km_for_user_and_type_and_date(
+        self,
+        user_lookup: UserLookup,
+        type_id: int,
+        on: datetime.date,
+        debit_km: float,
+    ):
+        """
+        Set the distance debit in km for the given date, user, and activity type.
+        """

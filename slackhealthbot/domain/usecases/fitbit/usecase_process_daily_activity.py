@@ -12,7 +12,10 @@ from slackhealthbot.domain.models.activity import (
     DailyActivityStats,
     TopActivityStats,
 )
-from slackhealthbot.domain.usecases.fitbit import usecase_calculate_streak
+from slackhealthbot.domain.usecases.fitbit import (
+    usecase_adjust_distance_balance,
+    usecase_calculate_streak,
+)
 from slackhealthbot.domain.usecases.slack import usecase_post_daily_activity
 from slackhealthbot.settings import Settings
 
@@ -26,6 +29,9 @@ async def do(
     ],
 ):
     now = dt.datetime.now(dt.timezone.utc)
+    daily_activity = await usecase_adjust_distance_balance.do(
+        daily_activity=daily_activity,
+    )
     streak_distance_km_days = await usecase_calculate_streak.do(
         local_fitbit_repo=local_fitbit_repo,
         daily_activity=daily_activity,
