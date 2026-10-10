@@ -19,6 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -r requirements/dev.txt --upgrade pip
+          opentelemetry-bootstrap -a install
       - name: Create fake .env file
         run: cp .env.template .env
       - name: Run codecheck
